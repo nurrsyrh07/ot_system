@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Person B's function — notifies En Salim that a request is waiting on them.
                 if (function_exists('notify_stage1_approver')) {
-                    notify_stage1_approver($request_id);
+                    notify_stage1_approver($pdo, $request_id);
                 }
 
                 flash_set('OT request submitted. It has been sent to En Salim for approval.', 'success');
@@ -98,5 +98,3 @@ include __DIR__ . '/includes/header.php';
   document.getElementById('start_time').addEventListener('change', updateHoursPreview);
   document.getElementById('end_time').addEventListener('change', updateHoursPreview);
 </script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>
