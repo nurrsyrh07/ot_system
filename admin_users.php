@@ -1,4 +1,3 @@
-```php
 <?php
 /**
  * admin_users.php
