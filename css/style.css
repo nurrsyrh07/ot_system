@@ -476,3 +476,123 @@ button[type="submit"] { width: 100%; margin-top: 1.5rem; }
   .detail-grid dt { margin-top: 0.5rem; }
   .content { padding: 1.25rem; }
 }
+
+/* ---------- Additional form fields ---------- */
+input[type="email"] {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--card-bg);
+}
+
+input[type="email"]:focus {
+  outline: 3px solid rgba(47,111,237,0.15);
+  border-color: var(--accent);
+}
+
+/* ---------- Buttons used by approval workflow ---------- */
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1.1rem;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn:hover {
+  background: var(--accent-dark);
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn-small {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+.btn-approve {
+  background: var(--green);
+}
+
+.btn-approve:hover {
+  background: #167149;
+}
+
+.btn-reject {
+  background: var(--red);
+}
+
+.btn-reject:hover {
+  background: #B9362F;
+}
+
+.approval-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.approval-buttons button {
+  width: auto;
+  margin-top: 0;
+  min-width: 120px;
+}
+
+.approval-panel {
+  margin-top: 1.5rem;
+}
+
+.read-only-note {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  color: var(--ink-soft);
+  margin: 1.5rem 0;
+}
+
+.alert {
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.alert-error {
+  background: var(--red-bg);
+  color: var(--red);
+  border-left: 3px solid var(--red);
+}
+
+.alert-success {
+  background: var(--green-bg);
+  color: var(--green);
+  border-left: 3px solid var(--green);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+@media (max-width: 700px) {
+  .approval-buttons {
+    flex-direction: column;
+  }
+
+  .approval-buttons button {
+    width: 100%;
+  }
+
+  .data-table {
+    min-width: 720px;
+  }
+}
