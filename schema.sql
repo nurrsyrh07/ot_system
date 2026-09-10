@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS users (
   id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   staff_no        VARCHAR(20)  NOT NULL UNIQUE,
   name            VARCHAR(100) NOT NULL,
-  email           VARCHAR(150) NOT NULL UNIQUE,
   password_hash   VARCHAR(255) NOT NULL,
   role            ENUM('staff','approver','admin') NOT NULL DEFAULT 'staff',
   approval_stage  TINYINT UNSIGNED NULL,          -- 1, 2, or NULL
