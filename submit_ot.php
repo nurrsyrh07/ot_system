@@ -58,9 +58,10 @@ $page_title = 'New OT request';
 include __DIR__ . '/includes/header.php';
 ?>
 <h1>New OT request</h1>
+<p class="subtitle">Fill in the details below to submit for approval.</p>
 <?php if ($error): ?><p class="form-error"><?= h($error) ?></p><?php endif; ?>
 
-<form method="post" class="card-form" novalidate>
+<form method="post" class="form-panel" novalidate>
   <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>">
 
   <label for="ot_date">Date</label>
@@ -98,3 +99,5 @@ include __DIR__ . '/includes/header.php';
   document.getElementById('start_time').addEventListener('change', updateHoursPreview);
   document.getElementById('end_time').addEventListener('change', updateHoursPreview);
 </script>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
