@@ -468,10 +468,10 @@ include __DIR__ . '/includes/header.php';
       <div class="print-sign-line">Staff Signature / Date</div>
     </div>
     <div class="print-sign-block">
-      <div class="print-sign-line">En Salim (Stage 1) / Date</div>
+      <div class="print-sign-line">En Salim / Date</div>
     </div>
     <div class="print-sign-block">
-      <div class="print-sign-line">CK Teh (Stage 2) / Date</div>
+      <div class="print-sign-line">CK Teh / Date</div>
     </div>
   </div>
 </div>
