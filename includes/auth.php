@@ -59,20 +59,21 @@ function verify_csrf($token): bool
 }
 
 /**
- * Attempt to log a user in by staff_no or email + password.
+ * Attempt to log a user in by staff_no + password.
  * On success, populates the session and returns true.
  */
-function attempt_login(PDO $pdo, string $identifier, string $password): bool
+function attempt_login(PDO $pdo, string $staff_no, string $password): bool
 {
-   $stmt = $pdo->prepare(
-    'SELECT * FROM users WHERE (staff_no = :staff_no OR email = :email) AND is_active = 1 LIMIT 1'
-);
-$stmt->execute([':staff_no' => $identifier, ':email' => $identifier]);
+    $stmt = $pdo->prepare(
+        'SELECT * FROM users WHERE staff_no = :staff_no AND is_active = 1 LIMIT 1'
+    );
+    $stmt->execute([':staff_no' => $staff_no]);
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password_hash'])) {
         session_regenerate_id(true);
         $_SESSION['user_id']        = (int)$user['id'];
+        $_SESSION['staff_no']       = $user['staff_no'];
         $_SESSION['name']           = $user['name'];
         $_SESSION['role']           = $user['role'];
         $_SESSION['approval_stage'] = $user['approval_stage'] !== null ? (int)$user['approval_stage'] : null;
