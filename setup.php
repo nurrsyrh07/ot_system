@@ -17,14 +17,11 @@ if (!$adminExists && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $staff_no = trim($_POST['staff_no'] ?? '');
         $name     = trim($_POST['name'] ?? '');
-        $email    = trim($_POST['email'] ?? '');
         $password = (string)($_POST['password'] ?? '');
         $confirm  = (string)($_POST['confirm'] ?? '');
 
-        if ($staff_no === '' || $name === '' || $email === '' || $password === '') {
+        if ($staff_no === '' || $name === '' || $password === '') {
             $error = 'Please fill in all fields.';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Please enter a valid email address.';
         } elseif ($password !== $confirm) {
             $error = 'Passwords do not match.';
         } elseif (strlen($password) < 8) {
@@ -33,18 +30,17 @@ if (!$adminExists && $_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $hash = password_hash($password, PASSWORD_BCRYPT);
                 $ins = $pdo->prepare(
-                    'INSERT INTO users (staff_no, name, email, password_hash, role, is_active)
-                     VALUES (:staff_no, :name, :email, :hash, "admin", 1)'
+                    'INSERT INTO users (staff_no, name, password_hash, role, is_active)
+                     VALUES (:staff_no, :name, :hash, "admin", 1)'
                 );
                 $ins->execute([
                     ':staff_no' => $staff_no,
                     ':name'     => $name,
-                    ':email'    => $email,
                     ':hash'     => $hash,
                 ]);
                 $success = true;
             } catch (PDOException $e) {
-                $error = 'Could not create account — staff number or email may already be in use.';
+                $error = 'Could not create account — that staff number may already be in use.';
             }
         }
     }
@@ -59,42 +55,46 @@ if (empty($_SESSION['csrf_token'])) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Initial setup — OT Requests</title>
+<title>Initial setup — JCY Overtime Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<main class="page">
-<div class="auth-card">
-  <h1>Initial setup</h1>
+<div class="auth-shell">
+  <?php include __DIR__ . '/includes/logo.php'; ?>
+  <div class="auth-page">
+    <div class="auth-card">
+      <h1>Initial setup</h1>
+      <p class="subtitle">Create the first admin account.</p>
 
-  <?php if ($adminExists): ?>
-    <p>Setup has already been completed. <a href="login.php">Go to login</a>.</p>
-  <?php elseif ($success): ?>
-    <p>Admin account created. <a href="login.php">Log in now</a>. For security, delete <code>setup.php</code> from the server.</p>
-  <?php else: ?>
-    <?php if ($error): ?><p class="form-error"><?= h($error) ?></p><?php endif; ?>
-    <form method="post" novalidate>
-      <input type="hidden" name="csrf_token" value="<?= h($_SESSION['csrf_token']) ?>">
+      <?php if ($adminExists): ?>
+        <p style="text-align:center;">Setup has already been completed. <a href="login.php">Go to login</a>.</p>
+      <?php elseif ($success): ?>
+        <p style="text-align:center;">Admin account created. <a href="login.php">Log in now</a>.<br>For security, delete <code>setup.php</code> from the server.</p>
+      <?php else: ?>
+        <?php if ($error): ?><p class="form-error"><?= h($error) ?></p><?php endif; ?>
+        <form method="post" novalidate>
+          <input type="hidden" name="csrf_token" value="<?= h($_SESSION['csrf_token']) ?>">
 
-      <label for="staff_no">Staff no.</label>
-      <input type="text" id="staff_no" name="staff_no" required value="<?= h($_POST['staff_no'] ?? '') ?>">
+          <label for="staff_no">Staff no.</label>
+          <input type="text" id="staff_no" name="staff_no" required value="<?= h($_POST['staff_no'] ?? '') ?>">
 
-      <label for="name">Full name</label>
-      <input type="text" id="name" name="name" required value="<?= h($_POST['name'] ?? '') ?>">
+          <label for="name">Full name</label>
+          <input type="text" id="name" name="name" required value="<?= h($_POST['name'] ?? '') ?>">
 
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" required value="<?= h($_POST['email'] ?? '') ?>">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
 
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" required>
+          <label for="confirm">Confirm password</label>
+          <input type="password" id="confirm" name="confirm" required>
 
-      <label for="confirm">Confirm password</label>
-      <input type="password" id="confirm" name="confirm" required>
-
-      <button type="submit">Create admin account</button>
-    </form>
-  <?php endif; ?>
+          <button type="submit">Create admin account</button>
+        </form>
+      <?php endif; ?>
+    </div>
+  </div>
 </div>
-</main>
 </body>
 </html>
