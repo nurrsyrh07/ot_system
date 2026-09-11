@@ -133,7 +133,7 @@ include __DIR__ . '/includes/header.php';
                 </td>
                 <td>
                   <a href="request_detail.php?id=<?= (int)$request['id'] ?>">View</a>
-                  <?php if ($request['status'] === 'pending_stage1'): ?>
+                  <?php if (in_array($request['status'], ['pending_stage1', 'pending_stage2', 'approved'], true)): ?>
                     · <a href="#" class="cancel-link" data-id="<?= (int)$request['id'] ?>">Cancel</a>
                   <?php endif; ?>
                 </td>
@@ -154,7 +154,7 @@ include __DIR__ . '/includes/header.php';
       document.querySelectorAll('.cancel-link').forEach(function (link) {
         link.addEventListener('click', function (e) {
           e.preventDefault();
-          if (confirm('Withdraw this OT request? This cannot be undone.')) {
+          if (confirm('Cancel this OT request? This cannot be undone.')) {
             document.getElementById('cancel-id').value = link.dataset.id;
             document.getElementById('cancel-form').submit();
           }
