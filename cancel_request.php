@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/mail.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
@@ -21,11 +22,13 @@ if ($id <= 0) {
 }
 
 /*
- * Only the owner can withdraw their own request, and only while it's still
- * pending_stage1 — i.e. before En Salim has looked at it. Once it's moved to
- * pending_stage2 or beyond, it's already part of someone else's decision
- * and shouldn't quietly disappear from under them.
+ * Only the owner can cancel their own request. Cancellation is allowed at
+ * any point the request is still "live" — pending stage 1, pending stage 2,
+ * or already approved — but not once it's already rejected or cancelled,
+ * since those are already closed.
  */
+$cancellableStatuses = ['pending_stage1', 'pending_stage2', 'approved'];
+
 $pdo->beginTransaction();
 
 try {
@@ -41,9 +44,9 @@ try {
         die('You do not have access to this request.');
     }
 
-    if ($request['status'] !== 'pending_stage1') {
+    if (!in_array($request['status'], $cancellableStatuses, true)) {
         $pdo->rollBack();
-        flash_set('This request can no longer be withdrawn — it has already moved to the next approval stage.', 'info');
+        flash_set('This request can no longer be cancelled.', 'info');
         redirect('request_detail.php?id=' . $id);
     }
 
@@ -51,14 +54,24 @@ try {
     $update->execute([':id' => $id]);
 
     $pdo->commit();
-    flash_set('Request withdrawn.', 'success');
+
+    // Let both approvers know, regardless of how far the request had
+    // gotten — they should hear about it even if they'd already approved
+    // their stage. A mail failure here doesn't undo the cancellation.
+    try {
+        notify_cancellation($id);
+    } catch (Throwable $mailError) {
+        error_log('OT system: cancellation notification failed — ' . $mailError->getMessage());
+    }
+
+    flash_set('Request cancelled.', 'success');
     redirect('dashboard.php');
 
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log('OT system: withdraw failed — ' . $e->getMessage());
+    error_log('OT system: cancel failed — ' . $e->getMessage());
     flash_set('Something went wrong. Please try again.', 'info');
     redirect('dashboard.php');
 }
