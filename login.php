@@ -18,9 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($staff_no === '' || $password === '') {
             $error = 'Enter your staff number and password.';
+        } elseif (attempt_login($pdo, $staff_no, $password)) {
+            redirect('dashboard.php');
         } else {
-            // Keep the login failure generic unless the credentials are correct
-            // and the account is specifically waiting for HR level confirmation.
+            // Check whether the credentials are correct but
+            // the staff member is still waiting for HR confirmation.
             $stmt = $pdo->prepare(
                 'SELECT role, level, password_hash
                  FROM users
@@ -33,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $validPassword = $user && password_verify($password, $user['password_hash']);
 
             if ($validPassword && $user['role'] === 'staff' && $user['level'] === null) {
-                $error = 'Your account is waiting for HR to confirm your level. Please try again after HR has completed the confirmation.';
+                $error = 'Your account is waiting for HR to confirm your account. Please try again after HR has completed the confirmation.';
             } else {
                 $error = 'Incorrect staff number or password.';
             }
@@ -44,11 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $page_title = 'Log in';
 include __DIR__ . '/includes/header.php';
 ?>
+
 <div class="auth-card">
   <h1>Welcome back!</h1>
   <p class="subtitle">Enter your staff number and password to log in.</p>
 
-  <?php if ($error): ?><p class="form-error"><?= h($error) ?></p><?php endif; ?>
+  <?php if ($error): ?>
+    <p class="form-error"><?= h($error) ?></p>
+  <?php endif; ?>
 
   <form method="post" novalidate>
     <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>">
@@ -60,15 +65,33 @@ include __DIR__ . '/includes/header.php';
     <label for="password">Password</label>
     <div class="password-wrap">
       <input type="password" id="password" name="password" required>
-      <button type="button" class="password-toggle" data-target="password" aria-label="Show password">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
+
+      <button type="button"
+              class="password-toggle"
+              data-target="password"
+              aria-label="Show password">
+
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"
+                stroke="currentColor"
+                stroke-width="1.8"/>
+
+          <circle cx="12"
+                  cy="12"
+                  r="3"
+                  stroke="currentColor"
+                  stroke-width="1.8"/>
+        </svg>
+
       </button>
     </div>
 
     <button type="submit">Log in</button>
   </form>
 
-  <p class="auth-switch">New staff? <a href="register.php">Create an account</a></p>
+  <p class="auth-switch">
+    New staff? <a href="register.php">Create an account</a>
+  </p>
 </div>
 
 <script>
