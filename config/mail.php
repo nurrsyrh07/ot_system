@@ -27,7 +27,7 @@ const MAIL_FROM_NAME     = 'OT Requests';
 // TODO: replace with HR's real address (or a comma-separated list if more
 // than one person should get this). Nothing will actually reach HR until
 // this is set correctly.
-const HR_NOTIFY_EMAIL = 'hr@jcyinternational.com';
+const HR_NOTIFY_EMAIL = 'nur.azrina@jcyinternational.com';
 
 /**
  * Send via PHP's mail(), pointed at the internal relay. Retries once with
