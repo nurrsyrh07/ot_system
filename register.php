@@ -27,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please enter a valid email address.';
         } elseif ($password !== $confirm) {
             $error = 'Passwords do not match.';
-        } elseif (strlen($password) < 8) {
-            $error = 'Password must be at least 8 characters.';
+        } elseif (strlen($password) < 6) {
+            $error = 'Password must be at least 6 characters.';
         } else {
             $check = $pdo->prepare('SELECT id FROM users WHERE staff_no = :staff_no OR email = :email');
             $check->execute([':staff_no' => $staff_no, ':email' => $email]);
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log('OT system: HR notification failed — ' . $mailError->getMessage());
                 }
 
-                flash_set('Account created. Please wait for HR to confirm your level before logging in.', 'success');
+                flash_set('Account created. Please wait for HR to confirm your account before logging in.', 'success');
                 redirect('login.php');
             }
         }

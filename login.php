@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $validPassword = $user && password_verify($password, $user['password_hash']);
 
             if ($validPassword && $user['role'] === 'staff' && $user['level'] === null) {
-                $error = 'Your account is waiting for HR to confirm your account. Please try again after HR has completed the confirmation.';
+                $error = 'Your account is waiting for HR to confirm your level. Please try again after HR has completed the confirmation.';
             } else {
                 $error = 'Incorrect staff number or password.';
             }
