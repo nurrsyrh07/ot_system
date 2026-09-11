@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log('OT system: HR notification failed — ' . $mailError->getMessage());
                 }
 
-                flash_set('Account created. You can log in now.', 'success');
+                flash_set('Account created. Please wait for HR to confirm your level before logging in.', 'success');
                 redirect('login.php');
             }
         }

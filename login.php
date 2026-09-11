@@ -18,10 +18,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($staff_no === '' || $password === '') {
             $error = 'Enter your staff number and password.';
-        } elseif (attempt_login($pdo, $staff_no, $password)) {
-            redirect('dashboard.php');
         } else {
-            $error = 'Incorrect staff number or password.';
+            // Keep the login failure generic unless the credentials are correct
+            // and the account is specifically waiting for HR level confirmation.
+            $stmt = $pdo->prepare(
+                'SELECT role, level, password_hash
+                 FROM users
+                 WHERE staff_no = :staff_no AND is_active = 1
+                 LIMIT 1'
+            );
+            $stmt->execute([':staff_no' => $staff_no]);
+            $user = $stmt->fetch();
+
+            $validPassword = $user && password_verify($password, $user['password_hash']);
+
+            if ($validPassword && $user['role'] === 'staff' && $user['level'] === null) {
+                $error = 'Your account is waiting for HR to confirm your account. Please try again after HR has completed the confirmation.';
+            } else {
+                $error = 'Incorrect staff number or password.';
+            }
         }
     }
 }
