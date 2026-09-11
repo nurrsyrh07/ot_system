@@ -170,6 +170,37 @@ function notify_stage2_approver(int $request_id): void
     send_ot_mail($approver['email'], $approver['name'], $subject, $body);
 }
 
+/**
+ * Notify both approvers that a staff member has cancelled their request —
+ * called from cancel_request.php regardless of which stage the request had
+ * reached, since either approver may already have acted on it.
+ */
+function notify_cancellation(int $request_id): void
+{
+    global $pdo;
+
+    $request = get_request_with_staff($pdo, $request_id);
+    if (!$request) {
+        error_log("OT system: notify_cancellation — request {$request_id} not found");
+        return;
+    }
+
+    $subject = "OT request cancelled by staff — #{$request['id']}";
+    $body = "The following overtime request has been cancelled by the staff member "
+          . "who submitted it:\n\n"
+          . format_request_summary($request)
+          . "\n\nNo further action is needed on this request.";
+
+    foreach ([1, 2] as $stage) {
+        $approver = find_approver_by_stage($pdo, $stage);
+        if (!$approver) {
+            error_log("OT system: notify_cancellation — no active stage-{$stage} approver configured");
+            continue;
+        }
+        send_ot_mail($approver['email'], $approver['name'], $subject, $body);
+    }
+}
+
 /*
  * ---------------------------------------------------------------------
  * PHPMailer alternative — only needed if the relay ever starts requiring
