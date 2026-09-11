@@ -2,35 +2,32 @@
 /**
  * config/mail.php
  *
- * Notification emails for the OT approval chain.
+ * All outbound email for the OT system goes through this file.
  *
  * -------------------------------------------------------------------------
  *   Sends via PHP's mail() straight to the internal SMTP relay at
  *   10.0.0.3:25 — the same relay QPM Auto's PHP jobs already use
  *   successfully via php.ini's [mail function] section. No Outlook COM,
  *   no sendmail.exe.
- *   ini_set() below points mail() at that relay at runtime, so this works
- *   even if the php.ini this web app's Apache actually loads isn't the
- *   same php.ini QPM Auto's jobs run under (worth double-checking if you
- *   still see connection errors — Windows/XAMPP boxes sometimes have more
- *   than one php.ini in play).
- *   Sends go straight to whichever approver find_approver_by_stage() looks
- *   up (real recipients, no test redirect) — make sure the `users` table
- *   has the correct email set for approval_stage 1 and 2 before testing.
  * -------------------------------------------------------------------------
  */
 
-// Same internal relay QPM Auto's PHP jobs already send through — no
-// Outlook needed.
+require_once __DIR__ . '/../includes/functions.php';
+
 const SMTP_RELAY_HOST = '10.0.0.3';
 const SMTP_RELAY_PORT = 25;
 
-const MAIL_FROM_ADDRESS = 'mis@jcyinternational.com';
+const MAIL_FROM_ADDRESS  = 'mis@jcyinternational.com';
 // If the relay rejects MAIL_FROM_ADDRESS as sender, send_ot_mail() retries
 // once with this address — it's the one php.ini already sends
 // successfully from.
 const MAIL_FROM_FALLBACK = 'programmer1@jcyinternational.com';
-const MAIL_FROM_NAME    = 'OT Requests';
+const MAIL_FROM_NAME     = 'OT Requests';
+
+// TODO: replace with HR's real address (or a comma-separated list if more
+// than one person should get this). Nothing will actually reach HR until
+// this is set correctly.
+const HR_NOTIFY_EMAIL = 'hr@jcyinternational.com';
 
 /**
  * Send via PHP's mail(), pointed at the internal relay. Retries once with
@@ -38,9 +35,6 @@ const MAIL_FROM_NAME    = 'OT Requests';
  */
 function send_via_native_mail(string $toEmail, string $toName, string $subject, string $body): bool
 {
-    // Windows PHP's mail() reads SMTP/smtp_port from php.ini at call time,
-    // and these ini_set() calls override that per-request — so this works
-    // even if this app's php.ini isn't already pointed at the relay.
     ini_set('SMTP', SMTP_RELAY_HOST);
     ini_set('smtp_port', (string)SMTP_RELAY_PORT);
 
@@ -62,9 +56,7 @@ function send_via_native_mail(string $toEmail, string $toName, string $subject, 
     return $ok;
 }
 
-/**
- * Single entry point every notification goes through.
- */
+/** Single entry point every notification goes through. */
 function send_ot_mail(string $toEmail, string $toName, string $subject, string $body): bool
 {
     return send_via_native_mail($toEmail, $toName, $subject, $body);
@@ -199,6 +191,49 @@ function notify_cancellation(int $request_id): void
         }
         send_ot_mail($approver['email'], $approver['name'], $subject, $body);
     }
+}
+
+/**
+ * Notify HR that a new staff member has registered, so they can declare
+ * that person's level (operator / leader / engineer) with one click from
+ * the email — no login required. Called by register.php right after the
+ * new account (and its level_token) is created.
+ */
+function notify_hr_new_staff(int $user_id): void
+{
+    global $pdo;
+
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
+    $stmt->execute([$user_id]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        error_log("OT system: notify_hr_new_staff — user {$user_id} not found");
+        return;
+    }
+    if (empty($user['level_token'])) {
+        error_log("OT system: notify_hr_new_staff — user {$user_id} has no level_token, cannot build links");
+        return;
+    }
+
+    $base = base_url();
+    $links = [];
+    foreach (['operator' => 'Operator', 'leader' => 'Leader', 'engineer' => 'Engineer'] as $value => $label) {
+        $links[] = $label . ': ' . $base . '/declare_level.php?token=' . urlencode($user['level_token']) . '&level=' . $value;
+    }
+
+    $subject = "New staff registered — please set level for {$user['name']} ({$user['staff_no']})";
+    $body = "A new staff account has been registered on the OT system:\n\n"
+          . "Name: {$user['name']}\n"
+          . "Staff No: {$user['staff_no']}\n"
+          . "Department: " . ($user['department'] ?: '(not provided)') . "\n"
+          . "Email: {$user['email']}\n\n"
+          . "Please click the link below that matches this staff member's level. "
+          . "Each link is one-time use — clicking one will ask you to confirm before it's applied.\n\n"
+          . implode("\n", $links)
+          . "\n\nIf you didn't expect this email, no action is needed.";
+
+    send_ot_mail(HR_NOTIFY_EMAIL, 'HR', $subject, $body);
 }
 
 /*

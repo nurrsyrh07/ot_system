@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/mail.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
@@ -13,34 +14,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf($_POST['csrf_token'] ?? '')) {
         $error = 'Your session expired. Please try again.';
     } else {
-        $staff_no = trim($_POST['staff_no'] ?? '');
-        $name     = trim($_POST['name'] ?? '');
-        $password = (string)($_POST['password'] ?? '');
-        $confirm  = (string)($_POST['confirm'] ?? '');
+        $staff_no   = trim($_POST['staff_no'] ?? '');
+        $name       = trim($_POST['name'] ?? '');
+        $department = trim($_POST['department'] ?? '');
+        $email      = trim($_POST['email'] ?? '');
+        $password   = (string)($_POST['password'] ?? '');
+        $confirm    = (string)($_POST['confirm'] ?? '');
 
-        if ($staff_no === '' || $name === '' || $password === '') {
-            $error = 'Please fill in all fields.';
+        if ($staff_no === '' || $name === '' || $email === '' || $password === '') {
+            $error = 'Please fill in all required fields.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
         } elseif ($password !== $confirm) {
             $error = 'Passwords do not match.';
         } elseif (strlen($password) < 8) {
             $error = 'Password must be at least 8 characters.';
         } else {
-            $check = $pdo->prepare('SELECT id FROM users WHERE staff_no = :staff_no');
-            $check->execute([':staff_no' => $staff_no]);
+            $check = $pdo->prepare('SELECT id FROM users WHERE staff_no = :staff_no OR email = :email');
+            $check->execute([':staff_no' => $staff_no, ':email' => $email]);
 
             if ($check->fetch()) {
-                $error = 'That staff number is already registered.';
+                $error = 'That staff number or email is already registered.';
             } else {
-                $hash = password_hash($password, PASSWORD_BCRYPT);
+                $hash  = password_hash($password, PASSWORD_BCRYPT);
+                $token = bin2hex(random_bytes(32));
+
                 $ins = $pdo->prepare(
-                    'INSERT INTO users (staff_no, name, password_hash, role, is_active)
-                     VALUES (:staff_no, :name, :hash, "staff", 1)'
+                    'INSERT INTO users (staff_no, name, department, email, password_hash, role, level_token, is_active)
+                     VALUES (:staff_no, :name, :department, :email, :hash, "staff", :token, 1)'
                 );
                 $ins->execute([
-                    ':staff_no' => $staff_no,
-                    ':name'     => $name,
-                    ':hash'     => $hash,
+                    ':staff_no'   => $staff_no,
+                    ':name'       => $name,
+                    ':department' => $department !== '' ? $department : null,
+                    ':email'      => $email,
+                    ':hash'       => $hash,
+                    ':token'      => $token,
                 ]);
+
+                $newUserId = (int)$pdo->lastInsertId();
+
+                // Let HR know so they can declare this person's level.
+                // A mail failure here shouldn't block the account from
+                // being created — HR can still be looped in manually.
+                try {
+                    notify_hr_new_staff($newUserId);
+                } catch (Throwable $mailError) {
+                    error_log('OT system: HR notification failed — ' . $mailError->getMessage());
+                }
 
                 flash_set('Account created. You can log in now.', 'success');
                 redirect('login.php');
@@ -68,6 +89,14 @@ include __DIR__ . '/includes/header.php';
     <label for="name">Full name</label>
     <input type="text" id="name" name="name" required
            value="<?= h($_POST['name'] ?? '') ?>">
+
+    <label for="department">Department</label>
+    <input type="text" id="department" name="department"
+           value="<?= h($_POST['department'] ?? '') ?>">
+
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required
+           value="<?= h($_POST['email'] ?? '') ?>">
 
     <label for="password">Password</label>
     <div class="password-wrap">

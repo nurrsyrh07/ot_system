@@ -85,3 +85,17 @@ function approval_status_label(int $status): string
         default => 'Unknown',
     };
 }
+
+/**
+ * Absolute base URL of the app (scheme + host + path to the app root, no
+ * trailing slash) — used to build links in emails, since those need a full
+ * URL rather than a relative one. Works out the app's root folder from
+ * wherever the currently-running script actually lives.
+ */
+function base_url(): string
+{
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $root   = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+    return $scheme . '://' . $host . $root;
+}
