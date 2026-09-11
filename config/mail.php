@@ -22,7 +22,7 @@ const MAIL_FROM_ADDRESS  = 'mis@jcyinternational.com';
 // once with this address — it's the one php.ini already sends
 // successfully from.
 const MAIL_FROM_FALLBACK = 'programmer1@jcyinternational.com';
-const MAIL_FROM_NAME     = 'OT Requests';
+const MAIL_FROM_NAME     = 'JCY OT System';
 
 // TODO: replace with HR's real address (or a comma-separated list if more
 // than one person should get this). Nothing will actually reach HR until
