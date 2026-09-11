@@ -76,7 +76,7 @@ function attempt_login(PDO $pdo, string $staff_no, string $password): bool
 
     // Staff accounts must have an HR-confirmed level before they can log in.
     // Approvers do not use the staff level, so this check applies only to role=staff.
-    if ($user['role'] === 'staff' && $user['level'] === null) {
+    if ($user['role'] === 'staff' && $user['category'] === null) {
         return false;
     }
 
@@ -86,5 +86,6 @@ function attempt_login(PDO $pdo, string $staff_no, string $password): bool
     $_SESSION['name']           = $user['name'];
     $_SESSION['role']           = $user['role'];
     $_SESSION['approval_stage'] = $user['approval_stage'] !== null ? (int)$user['approval_stage'] : null;
+    $_SESSION['category']       = $user['category'] ?? null;
     return true;
 }

@@ -709,3 +709,92 @@ input[type="email"]:focus {
   .calendar-day-num { font-size: 0.75rem; }
   .calendar-entry, .calendar-more { font-size: 0.6rem; }
 }
+/* =========================================================
+   Monthly OT claim forms
+   ========================================================= */
+.calendar-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+}
+
+.monthly-form-controls { margin-bottom: 1.25rem; }
+.monthly-form-controls select,
+.monthly-form-controls input[type="month"] { min-width: 220px; }
+
+.claim-document {
+  background: #fff;
+  margin: 1.5rem auto;
+  max-width: 1000px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.claim-document-inner { padding: 42px 48px; color: #111; font-family: Arial, sans-serif; }
+.claim-title-center { text-align: center; margin-bottom: 30px; }
+.claim-title-center h1 { margin: 0; font-size: 20px; letter-spacing: .4px; }
+.claim-title-center h2 { margin: 8px 0 0; font-size: 16px; font-weight: 700; }
+.claim-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #222;
+  margin-bottom: 18px;
+}
+.claim-meta-grid div { display: grid; grid-template-columns: 100px 1fr; padding: 8px 10px; border-bottom: 1px solid #222; }
+.claim-meta-grid div:nth-child(odd) { border-right: 1px solid #222; }
+.claim-meta-grid div:nth-last-child(-n+2) { border-bottom: 0; }
+.claim-meta-grid strong { font-weight: 700; }
+.claim-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 12px; }
+.claim-table th, .claim-table td { border: 1px solid #222; padding: 7px 6px; vertical-align: top; }
+.claim-table th { text-align: center; font-weight: 700; }
+.claim-table td:nth-child(1) { white-space: nowrap; }
+.claim-table td:nth-child(4) { text-align: center; }
+.claim-empty { text-align: center; padding: 24px !important; }
+.claim-signatures.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; margin-top: 45px; }
+.signature-line { border-bottom: 1px solid #222; height: 38px; margin-top: 22px; }
+.claim-signatures span { font-size: 12px; }
+.claim-notes { margin-top: 28px; font-size: 11px; line-height: 1.5; }
+.claim-notes ol { margin: 4px 0 0 20px; padding: 0; }
+
+.memo-heading { text-align: center; font-size: 21px; font-weight: 700; margin-bottom: 10px; }
+.memo-company { text-align: center; font-size: 18px; font-weight: 700; }
+.memo-department { text-align: center; font-size: 15px; font-weight: 700; margin-top: 3px; margin-bottom: 28px; }
+.memo-meta { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 13px; }
+.memo-meta th { width: 70px; text-align: left; vertical-align: top; padding: 4px 8px 4px 0; }
+.memo-meta td { padding: 4px 0; vertical-align: top; }
+.memo-table th, .memo-table td { font-size: 12px; }
+.memo-table th:nth-child(1) { width: 15%; }
+.memo-table th:nth-child(2) { width: 15%; }
+.memo-table th:nth-child(3) { width: 35%; }
+.memo-table th:nth-child(4) { width: 12%; }
+.memo-table th:nth-child(5) { width: 23%; }
+.requested-by { margin-top: 48px; width: 280px; }
+.requested-by .signature-line { height: 34px; }
+.sunday-memo { page-break-before: always; }
+
+@media (max-width: 700px) {
+  .calendar-actions { flex-direction: column; align-items: stretch; }
+  .claim-document-inner { padding: 24px 18px; }
+  .claim-meta-grid { grid-template-columns: 1fr; }
+  .claim-meta-grid div:nth-child(odd) { border-right: 0; }
+  .claim-meta-grid div:nth-last-child(2) { border-bottom: 1px solid #222; }
+  .claim-signatures.two-col { grid-template-columns: 1fr; gap: 25px; }
+  .claim-table { font-size: 10px; }
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  body { background: #fff !important; }
+  .sidebar, .topbar, .no-print, footer { display: none !important; }
+  .app-shell, .main-content, .content, main { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+  .claim-document { max-width: none; margin: 0; border: 0; box-shadow: none; page-break-after: always; }
+  .claim-document:last-of-type { page-break-after: auto; }
+  .claim-document-inner { padding: 0; }
+  .sunday-memo { page-break-before: always; }
+  a { color: #000; text-decoration: none; }
+}

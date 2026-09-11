@@ -99,3 +99,52 @@ function base_url(): string
     $root   = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
     return $scheme . '://' . $host . $root;
 }
+/** Human-readable label for the two HR-assigned staff categories. */
+function category_label(?string $category): string
+{
+    return match ($category) {
+        'below_ae' => 'Below Assistant Engineer',
+        'ae_above' => 'Assistant Engineer and Above',
+        default => 'Not confirmed',
+    };
+}
+
+/**
+ * Return the 21st-to-20th claim period represented by a YYYY-MM month.
+ * The month means the month containing the 20th (the end of the cycle).
+ */
+function claim_period(string $yearMonth): array
+{
+    if (!preg_match('/^\d{4}-\d{2}$/', $yearMonth)) {
+        $yearMonth = date('Y-m');
+    }
+
+    [$year, $month] = array_map('intval', explode('-', $yearMonth));
+    if ($month < 1 || $month > 12) {
+        $year = (int)date('Y');
+        $month = (int)date('n');
+    }
+
+    $end = new DateTimeImmutable(sprintf('%04d-%02d-20', $year, $month));
+    $start = $end->modify('-1 month')->modify('+1 day');
+
+    return [
+        'start' => $start->format('Y-m-d'),
+        'end' => $end->format('Y-m-d'),
+        'label' => $start->format('d/m/Y') . ' to ' . $end->format('d/m/Y'),
+        'month_label' => $end->format('F Y'),
+    ];
+}
+
+/** Current claim month: before the 21st, use this month's 20th; from 21st onward use next month's 20th. */
+function current_claim_month(): string
+{
+    $today = new DateTimeImmutable('today');
+    $end = ((int)$today->format('d') >= 21) ? $today->modify('+1 month') : $today;
+    return $end->format('Y-m');
+}
+
+function weekday_name(string $date): string
+{
+    return date('l', strtotime($date));
+}

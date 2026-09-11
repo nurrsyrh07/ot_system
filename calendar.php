@@ -18,14 +18,20 @@ $monthStart    = date('Y-m-01', $firstOfMonth);
 $monthEnd      = date('Y-m-t', $firstOfMonth);
 $today         = date('Y-m-d');
 
-$stmt = $pdo->prepare(
-    'SELECT r.ot_date, r.total_hours, u.name AS staff_name, u.staff_no
+$calendarSql =
+    'SELECT r.ot_date, r.total_hours, u.name AS staff_name, u.staff_no, r.id, r.staff_id
      FROM ot_requests r
      JOIN users u ON u.id = r.staff_id
-     WHERE r.status = "approved" AND r.ot_date BETWEEN :start AND :end
-     ORDER BY r.ot_date ASC, u.name ASC'
-);
-$stmt->execute([':start' => $monthStart, ':end' => $monthEnd]);
+     WHERE r.status = "approved" AND r.ot_date BETWEEN :start AND :end';
+
+$params = [':start' => $monthStart, ':end' => $monthEnd];
+if (current_role() === 'staff') {
+    $calendarSql .= ' AND r.staff_id = :staff_id';
+    $params[':staff_id'] = current_user_id();
+}
+$calendarSql .= ' ORDER BY r.ot_date ASC, u.name ASC';
+$stmt = $pdo->prepare($calendarSql);
+$stmt->execute($params);
 $rows = $stmt->fetchAll();
 
 $byDay = [];
@@ -53,6 +59,28 @@ include __DIR__ . '/includes/header.php';
     <a href="calendar.php" class="btn-secondary">Today</a>
     <a href="calendar.php?y=<?= $nextYear ?>&m=<?= $nextMonth ?>" class="btn-secondary">Next ›</a>
   </div>
+</div>
+
+<?php
+$claimMonth = sprintf('%04d-%02d', $year, $month);
+?>
+<div class="calendar-actions no-print">
+  <?php if (current_role() === 'staff'): ?>
+    <div>
+      <strong>Monthly claim period:</strong> <?= h(claim_period($claimMonth)['label']) ?>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+      <a href="claim_form.php?month=<?= h($claimMonth) ?>" class="btn-secondary">Preview Monthly Form</a>
+      <a href="claim_form.php?month=<?= h($claimMonth) ?>" class="btn-primary">Print Monthly Form</a>
+    </div>
+  <?php else: ?>
+    <div>
+      <strong>Monthly claim period:</strong> <?= h(claim_period($claimMonth)['label']) ?>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+      <a href="claim_form.php?month=<?= h($claimMonth) ?>" class="btn-primary">View Staff Forms</a>
+    </div>
+  <?php endif; ?>
 </div>
 
 <div class="calendar-wrap">

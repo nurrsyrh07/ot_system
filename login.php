@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Check whether the credentials are correct but
             // the staff member is still waiting for HR confirmation.
             $stmt = $pdo->prepare(
-                'SELECT role, level, password_hash
+                'SELECT role, category, password_hash
                  FROM users
                  WHERE staff_no = :staff_no AND is_active = 1
                  LIMIT 1'
@@ -34,8 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $validPassword = $user && password_verify($password, $user['password_hash']);
 
-            if ($validPassword && $user['role'] === 'staff' && $user['level'] === null) {
-                $error = 'Your account is waiting for HR to confirm your account. Please try again after HR has completed the confirmation.';
+            if ($validPassword && $user['role'] === 'staff' && $user['category'] === null) {
+                $error = 'Your account is waiting for HR to confirm your category. Please try again after HR has completed the confirmation.';
             } else {
                 $error = 'Incorrect staff number or password.';
             }

@@ -40,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $token = bin2hex(random_bytes(32));
 
                 $ins = $pdo->prepare(
-                    'INSERT INTO users (staff_no, name, department, email, password_hash, role, level_token, is_active)
-                     VALUES (:staff_no, :name, :department, :email, :hash, "staff", :token, 1)'
+                    'INSERT INTO users (staff_no, name, department, email, password_hash, role, category, level_token, is_active)
+                     VALUES (:staff_no, :name, :department, :email, :hash, "staff", NULL, :token, 1)'
                 );
                 $ins->execute([
                     ':staff_no'   => $staff_no,
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log('OT system: HR notification failed — ' . $mailError->getMessage());
                 }
 
-                flash_set('Account created. Please wait for HR to confirm your account before logging in.', 'success');
+                flash_set('Account created. Please wait for HR to confirm your category before logging in.', 'success');
                 redirect('login.php');
             }
         }
