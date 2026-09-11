@@ -273,8 +273,8 @@ include __DIR__ . '/includes/header.php';
 
   <div style="display:flex; gap:0.75rem;">
     <button type="button" class="btn-secondary" onclick="window.print()">Print</button>
-    <?php if ($isOwner && $request['status'] === 'pending_stage1'): ?>
-      <button type="button" class="btn-reject" id="withdraw-btn">Withdraw</button>
+    <?php if ($isOwner && in_array($request['status'], ['pending_stage1', 'pending_stage2', 'approved'], true)): ?>
+      <button type="button" class="btn-reject" id="withdraw-btn">Cancel request</button>
     <?php endif; ?>
     <?php if ($role === 'staff'): ?>
       <a href="dashboard.php" class="btn-secondary">Back to dashboard</a>
@@ -284,14 +284,14 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<?php if ($isOwner && $request['status'] === 'pending_stage1'): ?>
+<?php if ($isOwner && in_array($request['status'], ['pending_stage1', 'pending_stage2', 'approved'], true)): ?>
   <form method="post" action="cancel_request.php" id="withdraw-form" style="display:none;" class="no-print">
     <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>">
     <input type="hidden" name="id" value="<?= (int)$request['id'] ?>">
   </form>
   <script>
     document.getElementById('withdraw-btn').addEventListener('click', function () {
-      if (confirm('Withdraw this OT request? This cannot be undone.')) {
+      if (confirm('Cancel this OT request? This cannot be undone.')) {
         document.getElementById('withdraw-form').submit();
       }
     });
