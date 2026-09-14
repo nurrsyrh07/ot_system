@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Kuala_Lumpur');
 // Database connection settings.
 // Update these to match your XAMPP/WAMP MySQL setup.
 $DB_HOST = 'localhost';
