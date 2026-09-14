@@ -34,14 +34,17 @@ $stmt = $pdo->prepare($calendarSql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
 
-// Get staff list for monthly report
-$staffStmt = $pdo->query(
-    'SELECT id, name, staff_no
-     FROM users
-     WHERE role = "staff"
-     ORDER BY name ASC'
-);
-$staffList = $staffStmt->fetchAll();
+// Get staff list for monthly report — only admin/approver ever see this
+$staffList = [];
+if (current_role() !== 'staff') {
+    $staffStmt = $pdo->query(
+        'SELECT id, name, staff_no
+         FROM users
+         WHERE role = "staff"
+         ORDER BY name ASC'
+    );
+    $staffList = $staffStmt->fetchAll();
+}
 
 $byDay = [];
 foreach ($rows as $r) {
@@ -80,7 +83,8 @@ include __DIR__ . '/includes/header.php';
       Next ›
     </a>
 
-    <!-- Monthly Report -->
+    <?php if (current_role() !== 'staff'): ?>
+    <!-- Monthly Report (admin/approver only — can view any staff's report) -->
     <form method="get"
           action="monthly_report.php"
           target="_blank"
@@ -104,6 +108,9 @@ include __DIR__ . '/includes/header.php';
       </button>
 
     </form>
+    <?php else: ?>
+  
+    <?php endif; ?>
 
   </div>
 </div>
