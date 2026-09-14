@@ -20,7 +20,7 @@ function format_ot_time($time) {
 
 $staffId = $userId;
 
-if ($role === 'approver') {
+if ($role !== 'staff') {
     $requestedStaff = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : 0;
     if ($requestedStaff > 0) {
         $staffId = $requestedStaff;
@@ -90,7 +90,7 @@ include __DIR__ . '/includes/header.php';
   </div>
 
   <div class="page-heading-actions">
-    <a href="calendar.php?y=<?= (int)substr($period['end'],0,4) ?>&m=<?= (int)substr($period['end'],5,2) ?><?= $role === 'approver' ? '&staff_id=' . (int)$staffId : '' ?>" class="btn-secondary">← Back to Calendar</a>
+    <a href="calendar.php?y=<?= (int)substr($period['end'],0,4) ?>&m=<?= (int)substr($period['end'],5,2) ?><?= $role === 'approver' || $role === 'admin' ? '&staff_id=' . (int)$staffId : '' ?>" class="btn-secondary">← Back to Calendar</a>
     <button type="button" class="btn-primary" onclick="window.print()">↗ Print Forms</button>
   </div>
 </div>
@@ -108,8 +108,8 @@ include __DIR__ . '/includes/header.php';
   </div>
 
   <form method="get" class="form-control-form">
-    <?php if ($role === 'approver'): ?>
-      <div class="form-control-field">
+<?php if ($role === 'approver' || $role === 'admin'): ?>
+        <div class="form-control-field">
         <label for="staff_id">Staff member</label>
         <select id="staff_id" name="staff_id">
           <?php
@@ -218,8 +218,18 @@ include __DIR__ . '/includes/header.php';
         <tr><th>Subject</th><td><strong>CLAIM OVERTIME 08:00 PM to 10:00 PM</strong></td></tr>
       </table>
 
-      <p>With reference to above, please be informed that below workers will be work on 08:00 pm to 10:00 pm.</p>
-      <p>Kindly make sure a necessary arrangement for this:</p>
+<p>
+  With reference to above, please be informed that below workers will be work on
+  <?= !empty($categoryRequests)
+      ? h(format_ot_time($categoryRequests[0]['start_time']))
+      : ''
+  ?>
+  to
+  <?= !empty($categoryRequests)
+      ? h(format_ot_time($categoryRequests[0]['end_time']))
+      : ''
+  ?>.
+</p>      <p>Kindly make sure a necessary arrangement for this:</p>
 
       <table class="claim-table memo-table">
         <thead><tr><th>Date</th><th>Works Day</th><th>Remarks</th><th>OT Hour</th><th>Approval By</th></tr></thead>
@@ -266,8 +276,23 @@ include __DIR__ . '/includes/header.php';
       <tr><th>From</th><td><?= h($staff['name']) ?></td></tr>
       <tr><th>Cc</th><td>Mr Nordin / Mr Jeffrey Yeoh</td></tr>
       <tr><th>Date</th><td><?= h($period['label']) ?></td></tr>
-      <tr><th>Subject</th><td><strong>CLAIM OVERTIME 08:00 PM to 10:00 PM</strong></td></tr>
-    </table>
+<tr>
+  <th>Subject</th>
+  <td>
+    <strong>
+      CLAIM OVERTIME
+      <?= !empty($categoryRequests)
+          ? h(format_ot_time($categoryRequests[0]['start_time']))
+          : ''
+      ?>
+      to
+      <?= !empty($categoryRequests)
+          ? h(format_ot_time($categoryRequests[0]['end_time']))
+          : ''
+      ?>
+    </strong>
+  </td>
+</tr>    </table>
 
     <p>With reference to above, please be informed that below workers will be work on 08:00 pm to 10:00 pm.</p>
     <p>Kindly make sure a necessary arrangement for this:</p>
