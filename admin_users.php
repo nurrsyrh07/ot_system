@@ -204,8 +204,8 @@ include __DIR__ . '/includes/header.php';
       <label for="approval_stage">Approval stage</label>
       <select id="approval_stage" name="approval_stage">
         <option value="">Select a stage</option>
-        <option value="1">Stage 1 — En Salim</option>
-        <option value="2">Stage 2 — CK Teh</option>
+        <option value="1">Stage 1</option>
+        <option value="2">Stage 2 </option>
       </select>
     </div>
 
