@@ -9,6 +9,13 @@ $role = current_role();
 $userId = current_user_id();
 $claimMonth = $_GET['month'] ?? current_claim_month();
 $period = claim_period($claimMonth);
+function format_ot_time($time) {
+    if (empty($time)) {
+        return '';
+    }
+
+    return date('h:i A', strtotime($time));
+}
 
 $staffId = $userId;
 
@@ -145,8 +152,8 @@ include __DIR__ . '/includes/header.php';
           <?php foreach ($categoryRequests as $r): ?>
             <tr>
               <td><?= h(date('d/m/Y', strtotime($r['ot_date']))) ?></td>
-              <td><?= h(substr($r['start_time'],0,5)) ?></td>
-              <td><?= h(substr($r['end_time'],0,5)) ?></td>
+              <td><?= h(format_ot_time($r['start_time'])) ?></td>
+              <td><?= h(format_ot_time($r['end_time'])) ?></td> 
               <td><?= h(number_format((float)$r['total_hours'],2)) ?></td>
               <td><?= nl2br(h($r['reason'])) ?></td>
               <td></td>
