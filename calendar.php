@@ -243,32 +243,20 @@ include __DIR__ . '/includes/header.php';
     </div>
 
 
-    <?php if (current_role() === 'staff'): ?>
+<?php if (current_role() === 'staff'): ?>
 
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
 
-            <!-- Preview -->
-            <a
-                href="claim_form.php?month=<?= h($claimMonth) ?>"
-                class="btn-secondary"
-                target="_blank"
-            >
-                Preview Monthly Form
-            </a>
+        <a
+            href="claim_form.php?month=<?= h($claimMonth) ?>"
+            class="btn-primary"
+        >
+            Print Monthly Form
+        </a>
 
+    </div>
 
-            <!-- Print -->
-            <a
-                href="claim_form.php?month=<?= h($claimMonth) ?>&print=1"
-                class="btn-primary"
-                target="_blank"
-            >
-                Print Monthly Form
-            </a>
-
-        </div>
-
-    <?php endif; ?>
+<?php endif; ?>
 
 </div>
 
