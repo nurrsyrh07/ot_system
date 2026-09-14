@@ -12,7 +12,15 @@ require_login();
 
 $year = isset($_GET['y']) ? (int)$_GET['y'] : (int)date('Y');
 $month = isset($_GET['m']) ? (int)$_GET['m'] : (int)date('n');
-$staffId = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : 0;
+
+// Staff can only ever see their own report — ignore whatever staff_id is
+// in the URL for them and use their own id instead. Only admin/approver
+// may look up another staff member's report.
+if (current_role() === 'staff') {
+    $staffId = current_user_id();
+} else {
+    $staffId = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : 0;
+}
 
 if ($month < 1 || $month > 12) {
     $month = (int)date('n');
