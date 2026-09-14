@@ -70,7 +70,7 @@ $rows = $stmt->fetchAll();
  */
 $staffList = [];
 
-if (current_role() === 'approver') {
+if (current_role() === 'approver' || current_role() === 'admin') {
 
     $staffStmt = $pdo->query(
         'SELECT id, name, staff_no
@@ -166,7 +166,7 @@ include __DIR__ . '/includes/header.php';
             <strong><?= $approvedCount ?></strong>
             <span>Approved OT record<?= $approvedCount === 1 ? '' : 's' ?></span>
         </div>
-        <?php if (current_role() === 'approver'): ?>
+        <?php if (current_role() === 'approver' || current_role() === 'admin'): ?>
             <div class="claim-stat">
                 <strong><?= $staffWithOtCount ?></strong>
                 <span>Staff with OT</span>
