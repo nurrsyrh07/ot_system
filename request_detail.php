@@ -272,7 +272,6 @@ include __DIR__ . '/includes/header.php';
   </div>
 
   <div style="display:flex; gap:0.75rem;">
-    <button type="button" class="btn-secondary" onclick="window.print()">Print</button>
     <?php if ($isOwner && in_array($request['status'], ['pending_stage1', 'pending_stage2', 'approved'], true)): ?>
       <button type="button" class="btn-reject" id="withdraw-btn">Cancel request</button>
     <?php endif; ?>

@@ -97,11 +97,14 @@ h2 { font-size: 1.05rem; font-weight: 600; }
 }
 .sidebar {
   width: 220px;
+  min-height: 100vh;
   flex-shrink: 0;
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
   padding: 1.6rem 1rem 1.25rem;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 .sidebar .logo-title { color: #fff; }
 .sidebar .logo { padding: 0 0.35rem 2rem; }
@@ -132,17 +135,26 @@ h2 { font-size: 1.05rem; font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.9rem 0.75rem 0.25rem;
+  padding: 0.9rem 0.75rem 0.75rem;
+  margin-top: auto;
+  flex-shrink: 0;
   color: var(--sidebar-text);
   text-decoration: none;
   font-family: var(--font-head);
   font-weight: 500;
   font-size: 0.92rem;
   border-top: 1px solid #23262D;
-  margin-top: 0.5rem;
 }
-.sidebar-logout svg { width: 18px; height: 18px; }
-.sidebar-logout:hover { color: #fff; }
+
+.sidebar-logout svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sidebar-logout:hover {
+  color: #fff;
+}
 
 .main {
   flex: 1;
