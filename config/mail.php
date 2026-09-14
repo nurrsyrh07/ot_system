@@ -228,13 +228,52 @@ function notify_hr_new_staff(int $user_id): void
           . "Name: {$user['name']}\n"
           . "Staff No: {$user['staff_no']}\n"
           . "Department: " . ($user['department'] ?: '(not provided)') . "\n"
-          . "Email: {$user['email']}\n\n"
+          . "Email: " . ($user['email'] ?: '(no email address)') . "\n"
+          . "Email type: " . (($user['email_type'] ?? '') === 'personal' ? 'Personal email — HR verification required' : ($user['email'] ? 'Company email' : 'No email')) . "\n\n"
           . "Please click the link below that matches this staff member's category. "
-          . "Each link is one-time use — clicking one will ask you to confirm before it's applied.\n\n"
+          . "Each link is one-time use — clicking one will ask you to confirm before it's applied.\n"
+          . (($user['email_type'] ?? '') === 'personal' && !empty($user['email'])
+              ? "Because this is a declared personal email, please also confirm on the category page that you have verified that the email genuinely belongs to the staff member.\n\n"
+              : "\n")
           . implode("\n", $links)
           . "\n\nIf you didn't expect this email, no action is needed.";
 
     send_ot_mail(HR_NOTIFY_EMAIL, 'HR', $subject, $body);
+}
+
+
+/**
+ * Notify a staff member when HR has completed category confirmation.
+ * For a declared personal email, the address is used only after HR has
+ * confirmed it on the category-confirmation page.
+ */
+function notify_staff_category_confirmed(int $user_id): bool
+{
+    global $pdo;
+
+    $stmt = $pdo->prepare(
+        'SELECT name, staff_no, email, email_type, category
+         FROM users
+         WHERE id = :id AND is_active = 1
+         LIMIT 1'
+    );
+    $stmt->execute([':id' => $user_id]);
+    $user = $stmt->fetch();
+
+    if (!$user || empty($user['email'])) {
+        return false;
+    }
+
+    $subject = 'Your JCY OT System account has been approved';
+    $body = "Hello {$user['name']},\n\n"
+          . "HR has completed the category confirmation for your JCY OT System account.\n\n"
+          . "Staff No: {$user['staff_no']}\n"
+          . "Category: " . category_label($user['category']) . "\n\n"
+          . "You can now log in to the JCY OT System using your staff number and password.\n\n"
+          . "If you did not request this account, please contact HR immediately.\n\n"
+          . "JCY OT System";
+
+    return send_ot_mail($user['email'], $user['name'], $subject, $body);
 }
 
 /*

@@ -10,6 +10,15 @@ function require_login(): void
         header('Location: login.php');
         exit;
     }
+
+    // A staff member who logged in with a temporary password must change it
+    // before accessing the rest of the application.
+    if (!empty($_SESSION['must_change_password'])
+        && basename($_SERVER['PHP_SELF'] ?? '') !== 'force_change_password.php'
+        && basename($_SERVER['PHP_SELF'] ?? '') !== 'logout.php') {
+        header('Location: force_change_password.php');
+        exit;
+    }
 }
 
 /**
@@ -74,18 +83,26 @@ function attempt_login(PDO $pdo, string $staff_no, string $password): bool
         return false;
     }
 
-    // Staff accounts must have an HR-confirmed level before they can log in.
-    // Approvers do not use the staff level, so this check applies only to role=staff.
     if ($user['role'] === 'staff' && $user['category'] === null) {
         return false;
     }
 
+    // Temporary passwords expire after the time stored on the account.
+    if (!empty($user['must_change_password'])
+        && !empty($user['temporary_password_expires_at'])
+        && strtotime($user['temporary_password_expires_at']) <= time()) {
+        return false;
+    }
+
     session_regenerate_id(true);
-    $_SESSION['user_id']        = (int)$user['id'];
-    $_SESSION['staff_no']       = $user['staff_no'];
-    $_SESSION['name']           = $user['name'];
-    $_SESSION['role']           = $user['role'];
+    $_SESSION['user_id'] = (int)$user['id'];
+    $_SESSION['staff_no'] = $user['staff_no'];
+    $_SESSION['name'] = $user['name'];
+    $_SESSION['role'] = $user['role'];
     $_SESSION['approval_stage'] = $user['approval_stage'] !== null ? (int)$user['approval_stage'] : null;
-    $_SESSION['category']       = $user['category'] ?? null;
+    $_SESSION['category'] = $user['category'] ?? null;
+    $_SESSION['must_change_password'] = !empty($user['must_change_password']);
+    $_SESSION['temporary_password_expires_at'] = $user['temporary_password_expires_at'] ?? null;
+
     return true;
 }

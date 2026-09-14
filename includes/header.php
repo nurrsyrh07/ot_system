@@ -37,6 +37,12 @@ $__current_page = basename($_SERVER['PHP_SELF']);
         Request
       </a>
       <?php endif; ?>
+      <?php if (current_role() === 'approver'): ?>
+      <a href="manual_reset_password.php" class="<?= $__current_page === 'manual_reset_password.php' ? 'active' : '' ?>">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/></svg>
+        Password Reset
+      </a>
+      <?php endif; ?>
       <?php if (current_role() === 'admin'): ?>
       <a href="admin_users.php" class="<?= $__current_page === 'admin_users.php' ? 'active' : '' ?>">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>

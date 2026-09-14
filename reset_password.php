@@ -104,7 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                  */
                 $stmt = $pdo->prepare(
                     'UPDATE users
-                     SET password_hash = :password_hash
+                     SET password_hash = :password_hash,
+                         must_change_password = 0,
+                         temporary_password_expires_at = NULL
                      WHERE id = :user_id
                      LIMIT 1'
                 );
