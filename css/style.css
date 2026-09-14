@@ -825,6 +825,49 @@ input[type="email"]:focus {
     padding: 8px ;
   }
 }
+/* ---------- Print Settings ---------- */
+
+@media print {
+
+  .sidebar,
+  .topbar {
+    display: none ;
+  }
+
+  .content {
+    max-width: none ;
+    padding: 0 ;
+  }
+
+  .content > *:not(.print-only):not(.monthly-report-print):not(.claim-document) {
+    display: none ;
+  }
+
+  .print-only,
+  .monthly-report-print,
+  .claim-document {
+    display: block ;
+    padding: 1rem;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  /* Make OT table borders visible when printed */
+  .ot-summary-table {
+    width: 100% ;
+    border-collapse: collapse ;
+    border: 1px solid #000 ;
+  }
+
+  .ot-summary-table th,
+  .ot-summary-table td {
+    border: 1px solid #000 ;
+    padding: 8px ;
+  }
+}
+
 
 
 /* ---------- Calendar ---------- */

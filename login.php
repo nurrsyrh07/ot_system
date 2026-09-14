@@ -98,6 +98,10 @@ include __DIR__ . '/includes/header.php';
 </div>
 </div>
 
+<p class="auth-switch">
+  <a href="forgot_password.php">Forgot your password?</a>
+</p>
+</div>
 <script>
   document.querySelectorAll('.password-toggle').forEach(function (btn) {
     btn.addEventListener('click', function () {
