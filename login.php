@@ -92,6 +92,10 @@ include __DIR__ . '/includes/header.php';
   <p class="auth-switch">
     New staff? <a href="register.php">Create an account</a>
   </p>
+    <p class="auth-switch">
+  <a href="forgot_password.php">Forgot your password?</a>
+</p>
+</div>
 </div>
 
 <script>
