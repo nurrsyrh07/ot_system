@@ -22,12 +22,12 @@ const MAIL_FROM_ADDRESS  = 'mis@jcyinternational.com';
 // once with this address — it's the one php.ini already sends
 // successfully from.
 const MAIL_FROM_FALLBACK = 'programmer1@jcyinternational.com';
-const MAIL_FROM_NAME     = 'OT Requests';
+const MAIL_FROM_NAME     = 'JCY OT System';
 
 // TODO: replace with HR's real address (or a comma-separated list if more
 // than one person should get this). Nothing will actually reach HR until
 // this is set correctly.
-const HR_NOTIFY_EMAIL = 'hr@jcyinternational.com';
+const HR_NOTIFY_EMAIL = 'nur.azrina@jcyinternational.com';
 
 /**
  * Send via PHP's mail(), pointed at the internal relay. Retries once with
@@ -42,6 +42,7 @@ function send_via_native_mail(string $toEmail, string $toName, string $subject, 
         $headers  = "From: " . MAIL_FROM_NAME . " <" . $fromAddress . ">\r\n";
         $headers .= "Reply-To: " . $fromAddress . "\r\n";
         $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $headers .= "Content-Transfer-Encoding: 8bit\r\n";
         return mail($toEmail, $subject, $body, $headers);
     };
 
@@ -195,7 +196,7 @@ function notify_cancellation(int $request_id): void
 
 /**
  * Notify HR that a new staff member has registered, so they can declare
- * that person's level (operator / leader / engineer) with one click from
+ * that person's category (Below Assistant Engineer / Assistant Engineer and Above) with one click from
  * the email — no login required. Called by register.php right after the
  * new account (and its level_token) is created.
  */
@@ -218,17 +219,17 @@ function notify_hr_new_staff(int $user_id): void
 
     $base = base_url();
     $links = [];
-    foreach (['operator' => 'Operator', 'leader' => 'Leader', 'engineer' => 'Engineer'] as $value => $label) {
-        $links[] = $label . ': ' . $base . '/declare_level.php?token=' . urlencode($user['level_token']) . '&level=' . $value;
+    foreach (['below_ae' => 'Below Assistant Engineer', 'ae_above' => 'Assistant Engineer and Above'] as $value => $label) {
+        $links[] = $label . ': ' . $base . '/declare_level.php?token=' . urlencode($user['level_token']) . '&category=' . $value;
     }
 
-    $subject = "New staff registered — please set level for {$user['name']} ({$user['staff_no']})";
+    $subject = "New staff registered — please set category for {$user['name']} ({$user['staff_no']})";
     $body = "A new staff account has been registered on the OT system:\n\n"
           . "Name: {$user['name']}\n"
           . "Staff No: {$user['staff_no']}\n"
           . "Department: " . ($user['department'] ?: '(not provided)') . "\n"
           . "Email: {$user['email']}\n\n"
-          . "Please click the link below that matches this staff member's level. "
+          . "Please click the link below that matches this staff member's category. "
           . "Each link is one-time use — clicking one will ask you to confirm before it's applied.\n\n"
           . implode("\n", $links)
           . "\n\nIf you didn't expect this email, no action is needed.";

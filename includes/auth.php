@@ -70,14 +70,22 @@ function attempt_login(PDO $pdo, string $staff_no, string $password): bool
     $stmt->execute([':staff_no' => $staff_no]);
     $user = $stmt->fetch();
 
-    if ($user && password_verify($password, $user['password_hash'])) {
-        session_regenerate_id(true);
-        $_SESSION['user_id']        = (int)$user['id'];
-        $_SESSION['staff_no']       = $user['staff_no'];
-        $_SESSION['name']           = $user['name'];
-        $_SESSION['role']           = $user['role'];
-        $_SESSION['approval_stage'] = $user['approval_stage'] !== null ? (int)$user['approval_stage'] : null;
-        return true;
+    if (!$user || !password_verify($password, $user['password_hash'])) {
+        return false;
     }
-    return false;
+
+    // Staff accounts must have an HR-confirmed level before they can log in.
+    // Approvers do not use the staff level, so this check applies only to role=staff.
+    if ($user['role'] === 'staff' && $user['category'] === null) {
+        return false;
+    }
+
+    session_regenerate_id(true);
+    $_SESSION['user_id']        = (int)$user['id'];
+    $_SESSION['staff_no']       = $user['staff_no'];
+    $_SESSION['name']           = $user['name'];
+    $_SESSION['role']           = $user['role'];
+    $_SESSION['approval_stage'] = $user['approval_stage'] !== null ? (int)$user['approval_stage'] : null;
+    $_SESSION['category']       = $user['category'] ?? null;
+    return true;
 }
