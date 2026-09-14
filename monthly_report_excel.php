@@ -3,19 +3,25 @@
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 require_login();
 
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+
 // --------------------------------------------------
-// Get selected month
+// Get parameters
 // --------------------------------------------------
 
-$year = isset($_GET['y']) ? (int)$_GET['y'] : (int)date('Y');
-$month = isset($_GET['m']) ? (int)$_GET['m'] : (int)date('n');
+$year    = isset($_GET['y']) ? (int)$_GET['y'] : (int)date('Y');
+$month   = isset($_GET['m']) ? (int)$_GET['m'] : (int)date('n');
 
-// Staff can only ever see their own report — ignore whatever staff_id is
-// in the URL for them and use their own id instead. Only admin/approver
-// may look up another staff member's report.
+// Staff can only ever export their own report — ignore whatever staff_id
+// is in the URL for them and use their own id instead. Only admin/approver
+// may export another staff member's report.
 if (current_role() === 'staff') {
     $staffId = current_user_id();
 } else {
@@ -23,11 +29,7 @@ if (current_role() === 'staff') {
 }
 
 if ($month < 1 || $month > 12) {
-    $month = (int)date('n');
-}
-
-if ($year < 2000 || $year > 2100) {
-    $year = (int)date('Y');
+    die('Invalid month.');
 }
 
 if ($staffId <= 0) {
@@ -35,7 +37,7 @@ if ($staffId <= 0) {
 }
 
 // --------------------------------------------------
-// Month information
+// Month
 // --------------------------------------------------
 
 $firstOfMonth = mktime(0, 0, 0, $month, 1, $year);
@@ -68,7 +70,7 @@ if (!$staff) {
 }
 
 // --------------------------------------------------
-// Get approved OT for selected month
+// Get approved OT
 // --------------------------------------------------
 
 $stmt = $pdo->prepare(
@@ -94,211 +96,207 @@ $stmt->execute([
 $rows = $stmt->fetchAll();
 
 // --------------------------------------------------
-// Calculate monthly total
+// Create Excel
 // --------------------------------------------------
 
-$monthlyTotal = 0;
+$spreadsheet = new Spreadsheet();
 
-foreach ($rows as $row) {
-    $monthlyTotal += (float)$row['total_hours'];
-}
+$sheet = $spreadsheet->getActiveSheet();
 
-$monthlyTotalDisplay = rtrim(
-    rtrim(number_format($monthlyTotal, 2, '.', ''), '0'),
-    '.'
+$sheet->setTitle('Monthly OT');
+
+// --------------------------------------------------
+// Title
+// --------------------------------------------------
+
+$sheet->mergeCells('A1:F1');
+
+$sheet->setCellValue(
+    'A1',
+    'MONTHLY OVERTIME REPORT - ' . strtoupper($monthName)
 );
 
+$sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+
+$sheet->getStyle('A1')->getAlignment()
+    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
 // --------------------------------------------------
-// Page
+// Staff information
 // --------------------------------------------------
 
-$page_title = 'Monthly OT Report';
+$sheet->setCellValue('A3', 'Staff Name');
+$sheet->setCellValue('B3', $staff['name']);
+
+$sheet->setCellValue('A4', 'Staff No');
+$sheet->setCellValue('B4', $staff['staff_no']);
+
+$sheet->setCellValue('A5', 'Month');
+$sheet->setCellValue('B5', $monthName);
+
+$sheet->getStyle('A3:A5')->getFont()->setBold(true);
+
+// --------------------------------------------------
+// Table header
+// --------------------------------------------------
+
+$headerRow = 7;
+
+$headers = [
+    'No.',
+    'Date',
+    'Works Day',
+    'OT Time',
+    'Remarks',
+    'OT Hour'
+];
+
+foreach ($headers as $column => $header) {
+    $sheet->setCellValue(
+        chr(65 + $column) . $headerRow,
+        $header
+    );
+}
+
+$sheet->getStyle("A{$headerRow}:F{$headerRow}")
+    ->getFont()
+    ->setBold(true);
+
+$sheet->getStyle("A{$headerRow}:F{$headerRow}")
+    ->getAlignment()
+    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+// --------------------------------------------------
+// Data
+// --------------------------------------------------
+
+$rowNumber = $headerRow + 1;
+$monthlyTotal = 0;
+$counter = 1;
+
+foreach ($rows as $row) {
+
+    $monthlyTotal += (float)$row['total_hours'];
+
+    $sheet->setCellValue(
+        "A{$rowNumber}",
+        $counter
+    );
+
+    $sheet->setCellValue(
+        "B{$rowNumber}",
+        date('d/M/y', strtotime($row['ot_date']))
+    );
+
+    $sheet->setCellValue(
+        "C{$rowNumber}",
+        date('l', strtotime($row['ot_date']))
+    );
+
+    $sheet->setCellValue(
+        "D{$rowNumber}",
+        substr($row['start_time'], 0, 5)
+        . ' - ' .
+        substr($row['end_time'], 0, 5)
+    );
+
+    $sheet->setCellValue(
+        "E{$rowNumber}",
+        $row['reason']
+    );
+
+    $sheet->setCellValue(
+        "F{$rowNumber}",
+        (float)$row['total_hours']
+    );
+
+    $rowNumber++;
+    $counter++;
+}
+
+// --------------------------------------------------
+// Total
+// --------------------------------------------------
+
+$sheet->setCellValue(
+    "E{$rowNumber}",
+    'TOTAL OT HOURS'
+);
+
+$sheet->setCellValue(
+    "F{$rowNumber}",
+    $monthlyTotal
+);
 
-include __DIR__ . '/includes/header.php';
+$sheet->getStyle("E{$rowNumber}:F{$rowNumber}")
+    ->getFont()
+    ->setBold(true);
 
-?>
+// --------------------------------------------------
+// Borders
+// --------------------------------------------------
 
-<div class="report-page">
+$lastRow = $rowNumber;
 
-  <div class="report-actions no-print">
+$sheet->getStyle("A{$headerRow}:F{$lastRow}")
+    ->getBorders()
+    ->getAllBorders()
+    ->setBorderStyle(Border::BORDER_THIN);
 
-    <a href="calendar.php?y=<?= $year ?>&m=<?= $month ?>"
-       class="btn-secondary">
-      ← Back to Calendar
-    </a>
+// --------------------------------------------------
+// Alignment
+// --------------------------------------------------
 
-    <button type="button"
-            class="btn-primary"
-            onclick="window.print()">
-      Print / Save as PDF
-    </button>
+$sheet->getStyle("A{$headerRow}:D{$lastRow}")
+    ->getAlignment()
+    ->setVertical(Alignment::VERTICAL_TOP);
 
-    <a href="monthly_report_excel.php?y=<?= $year ?>&m=<?= $month ?>&staff_id=<?= $staffId ?>"
-       class="btn-secondary">
-      Export Excel
-    </a>
+$sheet->getStyle("A{$headerRow}:D{$lastRow}")
+    ->getAlignment()
+    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-  </div>
+$sheet->getStyle("F{$headerRow}:F{$lastRow}")
+    ->getAlignment()
+    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
+$sheet->getStyle("E{$headerRow}:E{$lastRow}")
+    ->getAlignment()
+    ->setWrapText(true);
 
-  <!-- ========================= -->
-  <!-- PRINTABLE REPORT -->
-  <!-- ========================= -->
+// --------------------------------------------------
+// Column widths
+// --------------------------------------------------
 
-  <div class="monthly-report-print">
+$sheet->getColumnDimension('A')->setWidth(8);
+$sheet->getColumnDimension('B')->setWidth(15);
+$sheet->getColumnDimension('C')->setWidth(15);
+$sheet->getColumnDimension('D')->setWidth(20);
+$sheet->getColumnDimension('E')->setWidth(45);
+$sheet->getColumnDimension('F')->setWidth(12);
 
-    <div class="print-header">
+// --------------------------------------------------
+// Download
+// --------------------------------------------------
 
-      <img src="assets/JCY_logo.png" alt="JCY HDD">
+$filename =
+    'Monthly_OT_' .
+    preg_replace('/[^A-Za-z0-9_-]/', '_', $staff['name']) .
+    '_' .
+    date('Ym', $firstOfMonth) .
+    '.xlsx';
 
-      <div>
-        <h2>Monthly Overtime Report</h2>
+header(
+    'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+);
 
-        <div class="print-meta">
-          <?= h($monthName) ?>
-        </div>
-      </div>
+header(
+    'Content-Disposition: attachment; filename="' . $filename . '"'
+);
 
-    </div>
+header('Cache-Control: max-age=0');
 
+$writer = new Xlsx($spreadsheet);
 
-    <!-- Staff Information -->
+$writer->save('php://output');
 
-    <table class="memo-fields">
-
-      <tr>
-        <td class="memo-field-label">Staff Name</td>
-        <td>:</td>
-        <td><?= h($staff['name']) ?></td>
-      </tr>
-
-      <tr>
-        <td class="memo-field-label">Staff No</td>
-        <td>:</td>
-        <td><?= h($staff['staff_no']) ?></td>
-      </tr>
-
-      <tr>
-        <td class="memo-field-label">Month</td>
-        <td>:</td>
-        <td><?= h($monthName) ?></td>
-      </tr>
-
-    </table>
-
-
-    <!-- OT Table -->
-
-    <table class="ot-summary-table">
-
-      <thead>
-
-        <tr>
-          <th>No.</th>
-          <th>Date</th>
-          <th>Works Day</th>
-          <th>OT Time</th>
-          <th>Remarks</th>
-          <th>OT Hour</th>
-        </tr>
-
-      </thead>
-
-      <tbody>
-
-        <?php if ($rows): ?>
-
-          <?php foreach ($rows as $index => $row): ?>
-
-            <tr>
-
-              <td style="text-align:center;">
-                <?= $index + 1 ?>
-              </td>
-
-              <td>
-                <?= h(date('d/M/y', strtotime($row['ot_date']))) ?>
-              </td>
-
-              <td>
-                <?= h(date('l', strtotime($row['ot_date']))) ?>
-              </td>
-
-              <td>
-                <?= h(substr($row['start_time'], 0, 5)) ?>
-                -
-                <?= h(substr($row['end_time'], 0, 5)) ?>
-              </td>
-
-              <td>
-                <?= nl2br(h($row['reason'])) ?>
-              </td>
-
-              <td style="text-align:center;">
-                <?= h($row['total_hours']) ?>
-              </td>
-
-            </tr>
-
-          <?php endforeach; ?>
-
-        <?php else: ?>
-
-          <tr>
-            <td colspan="6" style="text-align:center;">
-              No approved overtime records for this month.
-            </td>
-          </tr>
-
-        <?php endif; ?>
-
-
-        <!-- TOTAL -->
-
-        <tr class="monthly-total-row">
-
-          <td colspan="5" style="text-align:right;">
-            <strong>TOTAL OT HOURS</strong>
-          </td>
-
-          <td style="text-align:center;">
-            <strong><?= h($monthlyTotalDisplay) ?></strong>
-          </td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
-
-    <p class="print-closing">
-      Thank you.<br>
-      Regards,
-    </p>
-
-
-    <div class="print-final-signature">
-
-      <div>Requested By:</div>
-
-      <div style="margin-top: 40px;">
-        .......................
-      </div>
-
-      <div class="print-sign-name">
-        Mr. CK Teh
-      </div>
-
-      <div>
-        General Manager
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<?php include __DIR__ . '/includes/footer.php'; ?>
+exit;
