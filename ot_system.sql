@@ -1,236 +1,285 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
+-- ============================================================
+-- JCY Overtime Management System - Complete Database Setup
+-- ============================================================
+-- Single SQL file for the current OT system codebase.
 --
--- Host: 127.0.0.1
--- Generation Time: Sep 14, 2026 at 09:04 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Includes:
+--   * Staff / approver / admin accounts
+--   * Staff self-registration
+--   * Company / personal / no-email registration
+--   * HR category confirmation
+--   * Two-stage OT approval
+--   * Email password reset
+--   * Manual HR/supervisor password reset
+--   * Temporary-password expiry / forced change
+--   * Password-reset audit
+--
+-- IMPORTANT:
+--   - This file creates the schema only; it does not contain live
+--     usernames, password hashes, reset tokens, or test OT requests.
+--   - Back up an existing database before applying schema changes.
+-- ============================================================
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
+CREATE DATABASE IF NOT EXISTS ot_system
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
 
+USE ot_system;
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
+SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
+SET time_zone = '+00:00';
 
---
--- Database: `ot_system`
---
+-- ============================================================
+-- 1. USERS
+-- ============================================================
 
--- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS users (
+  id                              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  staff_no                        VARCHAR(20) NOT NULL,
+  name                            VARCHAR(100) NOT NULL,
+  department                      VARCHAR(100) DEFAULT NULL,
 
---
--- Table structure for table `ot_approvals`
---
+  email                           VARCHAR(150) DEFAULT NULL,
+  email_type                      ENUM('company','personal') DEFAULT NULL,
 
-CREATE TABLE `ot_approvals` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `request_id` int(10) UNSIGNED NOT NULL,
-  `approver_id` int(10) UNSIGNED NOT NULL,
-  `stage` tinyint(3) UNSIGNED NOT NULL,
-  `decision` enum('approved','rejected') NOT NULL,
-  `comment` text DEFAULT NULL,
-  `acted_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ;
+  password_hash                   VARCHAR(255) NOT NULL,
 
---
--- Dumping data for table `ot_approvals`
---
+  role                            ENUM('staff','approver','admin') NOT NULL DEFAULT 'staff',
+  approval_stage                  TINYINT UNSIGNED DEFAULT NULL,
 
-INSERT INTO `ot_approvals` (`id`, `request_id`, `approver_id`, `stage`, `decision`, `comment`, `acted_at`) VALUES
-(1, 1, 4, 1, 'approved', 'ok', '2026-09-14 01:05:30'),
-(2, 1, 9, 2, 'approved', NULL, '2026-09-14 01:08:13'),
-(3, 2, 4, 1, 'approved', NULL, '2026-09-14 01:54:58'),
-(4, 2, 9, 2, 'approved', NULL, '2026-09-14 01:55:07'),
-(5, 3, 4, 1, 'approved', NULL, '2026-09-14 03:34:28'),
-(6, 3, 9, 2, 'approved', NULL, '2026-09-14 03:34:42');
+  category                        ENUM('below_ae','ae_above') DEFAULT NULL,
 
--- --------------------------------------------------------
+  -- Retained for compatibility with older versions of the system.
+  level                           ENUM('operator','leader','engineer') DEFAULT NULL,
 
---
--- Table structure for table `ot_requests`
---
+  -- Token used by declare_level.php for HR category confirmation.
+  level_token                     VARCHAR(64) DEFAULT NULL,
+  level_set_at                    TIMESTAMP NULL DEFAULT NULL,
 
-CREATE TABLE `ot_requests` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `staff_id` int(10) UNSIGNED NOT NULL,
-  `ot_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
-  `total_hours` decimal(5,2) NOT NULL,
-  `reason` text NOT NULL,
-  `status` enum('pending_stage1','pending_stage2','approved','rejected','cancelled') NOT NULL DEFAULT 'pending_stage1',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Set when HR confirms a declared personal email.
+  personal_email_confirmed_at    TIMESTAMP NULL DEFAULT NULL,
 
---
--- Dumping data for table `ot_requests`
---
+  -- Manual temporary-password flow.
+  must_change_password            TINYINT(1) NOT NULL DEFAULT 0,
+  temporary_password_expires_at   DATETIME DEFAULT NULL,
 
-INSERT INTO `ot_requests` (`id`, `staff_id`, `ot_date`, `start_time`, `end_time`, `total_hours`, `reason`, `status`, `created_at`, `updated_at`) VALUES
-(1, 6, '2026-09-14', '09:04:00', '10:04:00', 1.00, 'OT', 'approved', '2026-09-14 01:04:54', '2026-09-14 01:08:13'),
-(2, 11, '2026-09-14', '09:54:00', '10:54:00', 1.00, 'ot', 'approved', '2026-09-14 01:54:15', '2026-09-14 01:55:07'),
-(3, 6, '2026-09-15', '11:33:00', '13:33:00', 2.00, 'working on overtime system', 'approved', '2026-09-14 03:34:05', '2026-09-14 03:34:42');
+  is_active                       TINYINT(1) NOT NULL DEFAULT 1,
+  created_at                      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
--- --------------------------------------------------------
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_users_staff_no (staff_no),
+  UNIQUE KEY uq_users_email (email),
+  UNIQUE KEY uq_users_level_token (level_token),
+  KEY idx_users_role_stage (role, approval_stage),
+  KEY idx_users_active (is_active),
+  KEY idx_users_email_type (email_type)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
---
--- Table structure for table `password_resets`
---
+-- ============================================================
+-- 2. OT REQUESTS
+-- ============================================================
 
-CREATE TABLE `password_resets` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED NOT NULL,
-  `token_hash` char(64) NOT NULL,
-  `expires_at` datetime NOT NULL,
-  `used_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE IF NOT EXISTS ot_requests (
+  id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  staff_id      INT UNSIGNED NOT NULL,
+  ot_date       DATE NOT NULL,
+  start_time    TIME NOT NULL,
+  end_time      TIME NOT NULL,
+  total_hours   DECIMAL(5,2) NOT NULL,
+  reason        TEXT NOT NULL,
+  status        ENUM(
+                  'pending_stage1',
+                  'pending_stage2',
+                  'approved',
+                  'rejected',
+                  'cancelled'
+                ) NOT NULL DEFAULT 'pending_stage1',
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                ON UPDATE CURRENT_TIMESTAMP,
 
---
--- Dumping data for table `password_resets`
---
+  PRIMARY KEY (id),
+  KEY idx_requests_status (status),
+  KEY idx_requests_staff (staff_id),
+  KEY idx_requests_created (created_at),
+  KEY idx_requests_date (ot_date),
 
-INSERT INTO `password_resets` (`id`, `user_id`, `token_hash`, `expires_at`, `used_at`, `created_at`) VALUES
-(4, 6, 'f38cb98f192af27e2667d235670328f078ca71266ea7f7adf71e895417ccc3d3', '2026-09-14 11:29:26', '2026-09-14 11:00:36', '2026-09-14 10:59:26'),
-(5, 6, 'c6afbdc660245926e83a06306e02c908029dfc24d40b4de67912f0ddd6d952a7', '2026-09-14 11:45:11', '2026-09-14 11:15:37', '2026-09-14 11:15:11');
+  CONSTRAINT fk_ot_requests_staff
+    FOREIGN KEY (staff_id)
+    REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
+-- ============================================================
+-- 3. OT APPROVALS
+-- ============================================================
 
---
--- Table structure for table `users`
---
+CREATE TABLE IF NOT EXISTS ot_approvals (
+  id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  request_id   INT UNSIGNED NOT NULL,
+  approver_id  INT UNSIGNED NOT NULL,
+  stage        TINYINT UNSIGNED NOT NULL,
+  decision     ENUM('approved','rejected') NOT NULL,
+  comment      TEXT DEFAULT NULL,
+  acted_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-CREATE TABLE `users` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `staff_no` varchar(20) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `department` varchar(100) DEFAULT NULL,
-  `email` varchar(150) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `role` enum('staff','approver','admin') NOT NULL,
-  `approval_stage` tinyint(3) UNSIGNED DEFAULT NULL,
-  `category` enum('below_ae','ae_above') DEFAULT NULL,
-  `level` enum('operator','leader','engineer') DEFAULT NULL,
-  `level_token` varchar(64) DEFAULT NULL,
-  `level_set_at` timestamp NULL DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ;
+  PRIMARY KEY (id),
+  KEY idx_approvals_request (request_id),
+  KEY idx_approvals_approver (approver_id),
 
---
--- Dumping data for table `users`
---
+  CONSTRAINT fk_ot_approvals_request
+    FOREIGN KEY (request_id)
+    REFERENCES ot_requests(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
 
-INSERT INTO `users` (`id`, `staff_no`, `name`, `department`, `email`, `password_hash`, `role`, `approval_stage`, `category`, `level`, `level_token`, `level_set_at`, `is_active`, `created_at`) VALUES
-(4, 'A001', 'Salim', 'MIS', 'salim@jcy.com', '$2y$10$Nggen7CAX5RDJD73HX1DMusDD./gU7Iqq02v3HyAMP50.mVsu/Xsu', 'approver', 1, 'ae_above', NULL, '', NULL, 1, '2026-09-14 00:51:07'),
-(6, 'S002', 'Syahirah', 'MIS', 'nur.syahirah@jcyinternational.com', '$2y$10$mtYSwNkVkwlAo6165XLCh.x.MRofwotjevD8PUF4h7DoaZVCM0OJW', 'staff', NULL, 'ae_above', NULL, NULL, '2026-09-14 01:03:51', 1, '2026-09-14 01:00:52'),
-(9, 'A002', 'CK Teh', 'MIS', 'ck@jcy.com', '$2y$10$crisvcxc4mYQckvq92lLnu95.SNaCxO0f6jAm8r.TZcqn5b3uBEBK', 'approver', 2, 'ae_above', NULL, NULL, NULL, 1, '2026-09-14 00:51:07'),
-(11, 'S001', 'halim', 'MIS', 'halim@jcy.com', '$2y$10$i86su/hD67ypumKWZf.GWuEEafy4IfDqocWU0U8OKFaLGU.r0xzkO', 'staff', NULL, 'below_ae', NULL, NULL, '2026-09-14 01:53:37', 1, '2026-09-14 01:52:54'),
-(13, 'A003', 'Ms Ena', 'HR', 'admin@jcy.com', '$2y$10$iOCp50GwS8/j5liVrfGr/.FXEnKn749w5f3yy8JNpf9jq55IIkc/W', 'admin', NULL, NULL, NULL, NULL, NULL, 1, '2026-09-14 06:18:01'),
-(14, 'S003', 'Azrina', 'MIS', 'nur.azrina@jcyinternational.com', '$2y$10$0ltB.nkoo9cOvibN64mPROZsMH2DrvlSqOOGdB1iLS4rbcscBBeUi', 'staff', NULL, 'ae_above', NULL, NULL, '2026-09-14 06:38:49', 1, '2026-09-14 06:38:12'),
-(15, 'S004', 'Aaron', 'MIS', 'aa@jcy.com', '$2y$10$ALepsys9IoZ6MZgQYlR8.OUB7cxQw6/rTdVhQujcNX4dKoB4IfkCm', 'staff', NULL, NULL, NULL, '1ea0417faf4a65fa3e05d7e0c4ce3478c93a66a2ddc157cc03a7ad7f47a5a255', NULL, 1, '2026-09-14 06:42:32'),
-(16, 'S005', 'TEST', 'MIS', 'test@jcy.com', '$2y$10$LzsF8Th2IfBDo6562tlxVO8F2BjlwZNo1i9ASE1EBXTT5Sx7OwYc2', 'staff', NULL, NULL, NULL, 'a1d0ac8bd5b1b867cc95b51a8b997cf3a6826f8aa67b6c38e2cd649c03de13f7', NULL, 1, '2026-09-14 06:48:35');
+  CONSTRAINT fk_ot_approvals_approver
+    FOREIGN KEY (approver_id)
+    REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
---
--- Indexes for dumped tables
---
+-- ============================================================
+-- 4. EMAIL PASSWORD RESETS
+-- ============================================================
 
---
--- Indexes for table `ot_approvals`
---
-ALTER TABLE `ot_approvals`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_approvals_request` (`request_id`),
-  ADD KEY `idx_approvals_approver` (`approver_id`);
+CREATE TABLE IF NOT EXISTS password_resets (
+  id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id      INT UNSIGNED NOT NULL,
+  token_hash   CHAR(64) NOT NULL,
+  expires_at   DATETIME NOT NULL,
+  used_at      DATETIME DEFAULT NULL,
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
---
--- Indexes for table `ot_requests`
---
-ALTER TABLE `ot_requests`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_requests_status` (`status`),
-  ADD KEY `idx_requests_staff` (`staff_id`),
-  ADD KEY `idx_requests_created` (`created_at`),
-  ADD KEY `idx_requests_date` (`ot_date`);
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_password_resets_token_hash (token_hash),
+  KEY idx_password_resets_user_id (user_id),
+  KEY idx_password_resets_expires_at (expires_at),
 
---
--- Indexes for table `password_resets`
---
-ALTER TABLE `password_resets`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `token_hash` (`token_hash`),
-  ADD KEY `idx_password_resets_user_id` (`user_id`),
-  ADD KEY `idx_password_resets_expires_at` (`expires_at`);
+  CONSTRAINT fk_password_resets_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================================
+-- 5. PASSWORD RESET AUDIT
+-- ============================================================
+-- The current PHP manual_reset_password.php inserts only:
+--   user_id, approver_id, method, created_at
 --
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `staff_no` (`staff_no`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD UNIQUE KEY `level_token` (`level_token`),
-  ADD KEY `idx_role_stage` (`role`,`approval_stage`),
-  ADD KEY `idx_active` (`is_active`);
+-- Therefore the remaining fields have safe defaults and can be used
+-- by future versions without breaking the current code.
 
---
--- AUTO_INCREMENT for dumped tables
---
+CREATE TABLE IF NOT EXISTS password_reset_audit (
+  id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id          INT UNSIGNED NOT NULL,
+  approver_id      INT UNSIGNED DEFAULT NULL,
+  method           VARCHAR(30) NOT NULL DEFAULT 'manual',
+  reset_method     ENUM('manual_badge_verified','email') NOT NULL DEFAULT 'manual_badge_verified',
+  badge_verified   TINYINT(1) NOT NULL DEFAULT 0,
+  expires_at       DATETIME DEFAULT NULL,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
---
--- AUTO_INCREMENT for table `ot_approvals`
---
-ALTER TABLE `ot_approvals`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  PRIMARY KEY (id),
+  KEY idx_reset_audit_user (user_id),
+  KEY idx_reset_audit_approver (approver_id),
+  KEY idx_reset_audit_created (created_at),
 
---
--- AUTO_INCREMENT for table `ot_requests`
---
-ALTER TABLE `ot_requests`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  CONSTRAINT fk_password_reset_audit_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
 
---
--- AUTO_INCREMENT for table `password_resets`
---
-ALTER TABLE `password_resets`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  CONSTRAINT fk_password_reset_audit_approver
+    FOREIGN KEY (approver_id)
+    REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================================
+-- 6. COMPATIBILITY / MIGRATION NOTES FOR OLDER DATABASES
+-- ============================================================
 --
--- AUTO_INCREMENT for table `users`
+-- For an existing database, the following statements should be run
+-- only when the corresponding column/table is missing. They are kept
+-- here as reference so the single SQL file documents the full schema.
 --
-ALTER TABLE `users`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+-- USERS additions used by the current PHP:
+--   email                           nullable
+--   email_type                      nullable
+--   personal_email_confirmed_at    nullable
+--   must_change_password            default 0
+--   temporary_password_expires_at   nullable
+--
+-- PASSWORD RESET additions:
+--   password_resets
+--   password_reset_audit
+--
+-- ============================================================
 
+-- Make sure legacy level values map to the current categories when
+-- existing data is migrated manually:
 --
--- Constraints for dumped tables
---
+-- UPDATE users
+-- SET category = CASE
+--   WHEN level = 'engineer' THEN 'ae_above'
+--   WHEN level IN ('operator','leader') THEN 'below_ae'
+--   ELSE category
+-- END
+-- WHERE category IS NULL;
 
---
--- Constraints for table `ot_approvals`
---
-ALTER TABLE `ot_approvals`
-  ADD CONSTRAINT `fk_ot_approvals_approver` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_ot_approvals_request` FOREIGN KEY (`request_id`) REFERENCES `ot_requests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+-- ============================================================
+-- 7. QUICK STRUCTURE CHECK
+-- ============================================================
 
---
--- Constraints for table `ot_requests`
---
-ALTER TABLE `ot_requests`
-  ADD CONSTRAINT `fk_ot_requests_staff` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+SELECT TABLE_NAME
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME IN (
+    'users',
+    'ot_requests',
+    'ot_approvals',
+    'password_resets',
+    'password_reset_audit'
+  )
+ORDER BY TABLE_NAME;
 
---
--- Constraints for table `password_resets`
---
-ALTER TABLE `password_resets`
-  ADD CONSTRAINT `fk_password_resets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-COMMIT;
+SELECT
+  COLUMN_NAME,
+  COLUMN_TYPE,
+  IS_NULLABLE,
+  COLUMN_DEFAULT
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'users'
+ORDER BY ORDINAL_POSITION;
 
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+SELECT
+  COLUMN_NAME,
+  COLUMN_TYPE,
+  IS_NULLABLE,
+  COLUMN_DEFAULT
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'password_reset_audit'
+ORDER BY ORDINAL_POSITION;
+
+-- ============================================================
+-- END
+-- ============================================================
