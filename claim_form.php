@@ -9,6 +9,7 @@ $role = current_role();
 $userId = current_user_id();
 $claimMonth = $_GET['month'] ?? current_claim_month();
 $period = claim_period($claimMonth);
+$autoPrint = isset($_GET['print']) && $_GET['print'] === '1';
 function format_ot_time($time) {
     if (empty($time)) {
         return '';
@@ -75,29 +76,41 @@ $page_title = 'Monthly OT Forms';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="dash-header no-print">
-  <div>
+<div class="page-heading no-print">
+  <div class="page-heading-copy">
+    <div class="eyebrow">MONTHLY CLAIM</div>
     <h1>Monthly OT Forms</h1>
-    <p class="subtitle">
-      <?= h($staff['name']) ?> (<?= h($staff['staff_no']) ?>) ·
-      <?= h($period['label']) ?>
-    </p>
+    <div class="page-identity">
+      <strong><?= h($staff['name']) ?></strong>
+      <span>•</span>
+      <span><?= h($staff['staff_no']) ?></span>
+      <span>•</span>
+      <span><?= h($period['label']) ?></span>
+    </div>
   </div>
-  <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-    <a href="calendar.php?y=<?= (int)substr($period['end'],0,4) ?>&m=<?= (int)substr($period['end'],5,2) ?><?= $role === 'approver' ? '&staff_id=' . (int)$staffId : '' ?>" class="btn-secondary">Back to Calendar</a>
-    <button type="button" class="btn-primary" onclick="window.print()">Print Forms</button>
+
+  <div class="page-heading-actions">
+    <a href="calendar.php?y=<?= (int)substr($period['end'],0,4) ?>&m=<?= (int)substr($period['end'],5,2) ?><?= $role === 'approver' ? '&staff_id=' . (int)$staffId : '' ?>" class="btn-secondary">← Back to Calendar</a>
+    <button type="button" class="btn-primary" onclick="window.print()">↗ Print Forms</button>
   </div>
 </div>
 
-<div class="form-panel no-print monthly-form-controls">
-  <form method="get" style="display:flex;gap:1rem;align-items:end;flex-wrap:wrap;">
-    <div>
-      <label for="month">Claim month</label>
-      <input type="month" id="month" name="month" value="<?= h($claimMonth) ?>">
+<section class="form-control-card no-print">
+  <div class="form-control-intro">
+    <div class="form-control-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </div>
+    <div>
+      <div class="eyebrow">CLAIM PERIOD</div>
+      <h2><?= h($period['month_label']) ?></h2>
+      <p><?= h($period['label']) ?></p>
+    </div>
+  </div>
+
+  <form method="get" class="form-control-form">
     <?php if ($role === 'approver'): ?>
-      <div>
-        <label for="staff_id">Staff</label>
+      <div class="form-control-field">
+        <label for="staff_id">Staff member</label>
         <select id="staff_id" name="staff_id">
           <?php
           $allStaff = $pdo->query('SELECT id, staff_no, name FROM users WHERE role = "staff" ORDER BY name ASC')->fetchAll();
@@ -110,15 +123,29 @@ include __DIR__ . '/includes/header.php';
         </select>
       </div>
     <?php endif; ?>
+
+    <div class="form-control-field">
+      <label for="month">Month</label>
+      <input type="month" id="month" name="month" value="<?= h($claimMonth) ?>">
+    </div>
+
     <button type="submit" class="btn-secondary">Preview Selected Period</button>
   </form>
-</div>
+</section>
 
 <?php if ($category === null): ?>
   <div class="form-error no-print">This staff member's category has not been confirmed by HR yet.</div>
 <?php endif; ?>
 
 <?php if ($category !== null): ?>
+<div class="document-preview-heading no-print">
+  <div>
+    <h2>Form Preview</h2>
+    <p>Printable monthly claim document</p>
+  </div>
+  <span class="document-status"><i></i> <?= count($requests) ?> approved record<?= count($requests) === 1 ? '' : 's' ?></span>
+</div>
+
 <section class="claim-document">
   <div class="claim-document-inner">
     <?php if ($category === 'ae_above'): ?>
@@ -274,6 +301,14 @@ include __DIR__ . '/includes/header.php';
 
 <?php if (!$requests): ?>
   <div class="empty-state no-print">There are no approved OT records for this claim period.</div>
+<?php endif; ?>
+
+<?php if ($autoPrint): ?>
+<script>
+window.addEventListener('load', function () {
+  setTimeout(function () { window.print(); }, 400);
+});
+</script>
 <?php endif; ?>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

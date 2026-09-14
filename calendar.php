@@ -124,6 +124,8 @@ $claimMonth = sprintf(
 );
 
 $claimPeriod = claim_period($claimMonth);
+$approvedCount = count($rows);
+$staffWithOtCount = count(array_unique(array_map(static function ($row) { return (int)$row['staff_id']; }, $rows)));
 
 $page_title = 'OT Calendar';
 
@@ -131,233 +133,138 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 
-<div class="dash-header">
-
-    <div>
-
+<div class="page-heading no-print">
+    <div class="page-heading-copy">
+        <div class="eyebrow">OVERTIME TRACKING</div>
         <h1>OT Calendar</h1>
-
         <p class="subtitle">
-            Approved overtime across the company —
-            <?= h(date('F Y', $firstOfMonth)) ?>.
+            Approved overtime across the company — <?= h(date('F Y', $firstOfMonth)) ?>.
         </p>
-
     </div>
 
+    <div class="calendar-nav no-print">
+        <a href="calendar.php?y=<?= $prevYear ?>&m=<?= $prevMonth ?>" class="btn-secondary">‹ Prev</a>
+        <a href="calendar.php" class="btn-secondary">Today</a>
+        <a href="calendar.php?y=<?= $nextYear ?>&m=<?= $nextMonth ?>" class="btn-secondary">Next ›</a>
+    </div>
+</div>
 
-    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+<section class="claim-period-card no-print">
+    <div class="claim-period-main">
+        <div class="claim-period-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+            <div class="eyebrow">MONTHLY CLAIM</div>
+            <h2><?= h($claimPeriod['month_label']) ?></h2>
+            <p><?= h($claimPeriod['label']) ?></p>
+        </div>
+    </div>
 
-        <a
-            href="calendar.php?y=<?= $prevYear ?>&m=<?= $prevMonth ?>"
-            class="btn-secondary"
-        >
-            ‹ Prev
-        </a>
-
-
-        <a
-            href="calendar.php"
-            class="btn-secondary"
-        >
-            Today
-        </a>
-
-
-        <a
-            href="calendar.php?y=<?= $nextYear ?>&m=<?= $nextMonth ?>"
-            class="btn-secondary"
-        >
-            Next ›
-        </a>
-
-
+    <div class="claim-period-stats">
+        <div class="claim-stat">
+            <strong><?= $approvedCount ?></strong>
+            <span>Approved OT record<?= $approvedCount === 1 ? '' : 's' ?></span>
+        </div>
         <?php if (current_role() === 'approver'): ?>
-
-            <form
-                method="get"
-                action="claim_form.php"
-                target="_blank"
-                style="display:flex;gap:.5rem;align-items:center;"
-            >
-
-                <input
-                    type="hidden"
-                    name="month"
-                    value="<?= h($claimMonth) ?>"
-                >
-
-                <select
-                    name="staff_id"
-                    required
-                    class="form-control"
-                >
-
-                    <option value="">
-                        Select Staff
-                    </option>
-
-                    <?php foreach ($staffList as $staff): ?>
-
-                        <option
-                            value="<?= (int)$staff['id'] ?>"
-                        >
-                            <?= h($staff['name']) ?>
-                            (<?= h($staff['staff_no']) ?>)
-                        </option>
-
-                    <?php endforeach; ?>
-
-                </select>
-
-
-                <button
-                    type="submit"
-                    class="btn-primary"
-                >
-                    View Monthly Form
-                </button>
-
-            </form>
-
+            <div class="claim-stat">
+                <strong><?= $staffWithOtCount ?></strong>
+                <span>Staff with OT</span>
+            </div>
         <?php endif; ?>
-
     </div>
 
-</div>
+    <div class="claim-period-actions">
+        <?php if (current_role() === 'staff'): ?>
+            <a href="claim_form.php?month=<?= h($claimMonth) ?>" class="btn-secondary">
+                Preview Forms
+            </a>
+            <a href="claim_form.php?month=<?= h($claimMonth) ?>&print=1" class="btn-primary">
+                Print Forms
+            </a>
+        <?php else: ?>
+            <form method="get" action="claim_form.php" class="calendar-form-actions">
+                <input type="hidden" name="month" value="<?= h($claimMonth) ?>">
+                <label class="sr-only" for="calendar-staff">Select staff</label>
+                <select id="calendar-staff" name="staff_id" required>
+                    <option value="">Select staff</option>
+                    <?php foreach ($staffList as $staff): ?>
+                        <option value="<?= (int)$staff['id'] ?>">
+                            <?= h($staff['name']) ?> (<?= h($staff['staff_no']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn-secondary">Preview Form</button>
+            </form>
+        <?php endif; ?>
+    </div>
+</section>
 
-
-<!-- =========================================================
-     MONTHLY FORM ACTIONS
-     ========================================================= -->
-
-<div class="calendar-actions no-print">
-
-    <div>
-
-        <strong>
-            Monthly claim period:
-        </strong>
-
-        <?= h($claimPeriod['label']) ?>
-
+<section class="calendar-section">
+    <div class="calendar-section-header no-print">
+        <div>
+            <h2><?= h(date('F Y', $firstOfMonth)) ?></h2>
+            <p>Approved overtime records for this month.</p>
+        </div>
+        <div class="calendar-legend">
+            <span><i></i> Approved OT</span>
+            <span><b></b> Today</span>
+        </div>
     </div>
 
+    <div class="calendar-wrap">
+        <div class="calendar-weekdays">
+            <span>Sun</span>
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+        </div>
 
-<?php if (current_role() === 'staff'): ?>
+        <div class="calendar-grid">
+            <?php for ($i = 0; $i < $startWeekday; $i++): ?>
+                <div class="calendar-cell calendar-cell-empty"></div>
+            <?php endfor; ?>
 
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <?php for ($d = 1; $d <= $daysInMonth; $d++): ?>
+                <?php
+                $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $d);
+                $isToday = $dateStr === $today;
+                $entries = $byDay[$d] ?? [];
+                $shown = array_slice($entries, 0, 3);
+                $more = count($entries) - count($shown);
+                ?>
 
-        <a
-            href="claim_form.php?month=<?= h($claimMonth) ?>"
-            class="btn-primary"
-        >
-            Print Monthly Form
-        </a>
-
-    </div>
-
-<?php endif; ?>
-
-</div>
-
-
-<!-- =========================================================
-     CALENDAR
-     ========================================================= -->
-
-<div class="calendar-wrap">
-
-    <div class="calendar-weekdays">
-
-        <span>Sun</span>
-        <span>Mon</span>
-        <span>Tue</span>
-        <span>Wed</span>
-        <span>Thu</span>
-        <span>Fri</span>
-        <span>Sat</span>
-
-    </div>
-
-
-    <div class="calendar-grid">
-
-        <?php for ($i = 0; $i < $startWeekday; $i++): ?>
-
-            <div class="calendar-cell calendar-cell-empty"></div>
-
-        <?php endfor; ?>
-
-
-        <?php for ($d = 1; $d <= $daysInMonth; $d++): ?>
-
-            <?php
-
-            $dateStr = sprintf(
-                '%04d-%02d-%02d',
-                $year,
-                $month,
-                $d
-            );
-
-            $isToday = $dateStr === $today;
-
-            $entries = $byDay[$d] ?? [];
-
-            $shown = array_slice(
-                $entries,
-                0,
-                3
-            );
-
-            $more = count($entries) - count($shown);
-
-            ?>
-
-            <div
-                class="calendar-cell <?= $isToday ? 'calendar-cell-today' : '' ?>"
-            >
-
-                <div class="calendar-day-num">
-                    <?= $d ?>
-                </div>
-
-
-                <?php if ($shown): ?>
-
-                    <div class="calendar-entries">
-
-                        <?php foreach ($shown as $entry): ?>
-
-                            <div
-                                class="calendar-entry"
-                                title="<?= h($entry['staff_name']) ?> (<?= h($entry['staff_no']) ?>) — <?= h($entry['total_hours']) ?> hrs"
-                            >
-                                <?= h($entry['staff_name']) ?>
-                            </div>
-
-                        <?php endforeach; ?>
-
-
-                        <?php if ($more > 0): ?>
-
-                            <div class="calendar-more">
-                                +<?= $more ?> more
-                            </div>
-
-                        <?php endif; ?>
-
+                <div class="calendar-cell <?= $isToday ? 'calendar-cell-today' : '' ?>">
+                    <div class="calendar-day-top">
+                        <span class="calendar-day-num"><?= $d ?></span>
+                        <?php if ($isToday): ?><span class="today-label">Today</span><?php endif; ?>
                     </div>
 
-                <?php endif; ?>
+                    <?php if ($shown): ?>
+                        <div class="calendar-entries">
+                            <?php foreach ($shown as $entry): ?>
+                                <div class="calendar-entry"
+                                     title="<?= h($entry['staff_name']) ?> (<?= h($entry['staff_no']) ?>) — <?= h($entry['total_hours']) ?> hrs">
+                                    <span class="calendar-entry-dot"></span>
+                                    <span class="calendar-entry-name"><?= h($entry['staff_name']) ?></span>
+                                    <span class="calendar-entry-hours"><?= h(number_format((float)$entry['total_hours'], 2)) ?>h</span>
+                                </div>
+                            <?php endforeach; ?>
 
-            </div>
-
-        <?php endfor; ?>
-
+                            <?php if ($more > 0): ?>
+                                <div class="calendar-more">+<?= $more ?> more</div>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="calendar-empty-day">—</div>
+                    <?php endif; ?>
+                </div>
+            <?php endfor; ?>
+        </div>
     </div>
-
-</div>
-
+</section>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
