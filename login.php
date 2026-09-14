@@ -97,7 +97,6 @@ include __DIR__ . '/includes/header.php';
 </p>
 </div>
 </div>
-
 <script>
   document.querySelectorAll('.password-toggle').forEach(function (btn) {
     btn.addEventListener('click', function () {

@@ -261,6 +261,89 @@ include __DIR__ . '/includes/header.php';
 
     <?php endif; ?>
 
+<?php elseif ($role === 'admin'): ?>
+
+    <?php
+    $pendingStmt = $pdo->query(
+        'SELECT id, name, staff_no, department, level_token
+         FROM users
+         WHERE role = "staff" AND category IS NULL AND level_token IS NOT NULL
+         ORDER BY name ASC'
+    );
+    $pendingDeclarations = $pendingStmt->fetchAll();
+    ?>
+
+    <div class="dash-header">
+      <div>
+        <h1>Admin Dashboard</h1>
+        <p class="subtitle">System administration and management.</p>
+      </div>
+    </div>
+
+    <div class="stat-cards">
+
+      <div class="stat-card">
+        <div class="stat-card-head">
+          <div class="stat-icon stat-icon-blue">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"
+                    stroke="currentColor" stroke-width="1.8"/>
+              <path d="M9 12l2 2 4-4"
+                    stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>Administrator</h3>
+        </div>
+        <span class="stat-num">Admin</span>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-head">
+          <div class="stat-icon <?= $pendingDeclarations ? 'stat-icon-amber' : 'stat-icon-green' ?>">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>Level declarations waiting</h3>
+        </div>
+        <span class="stat-num"><?= count($pendingDeclarations) ?></span>
+      </div>
+
+    </div>
+
+    <div class="request-panel">
+      <div class="request-panel-head">
+        <h2>New staff waiting on category confirmation</h2>
+      </div>
+
+      <?php if (!$pendingDeclarations): ?>
+        <p class="empty-state">Nothing pending — every registered staff member has a confirmed category.</p>
+      <?php else: ?>
+        <table class="data-table">
+          <thead>
+            <tr><th>Name</th><th>Staff No</th><th>Department</th><th></th></tr>
+          </thead>
+          <tbody>
+            <?php foreach ($pendingDeclarations as $u): ?>
+              <tr>
+                <td><?= h($u['name']) ?></td>
+                <td><?= h($u['staff_no']) ?></td>
+                <td><?= h($u['department'] ?: '—') ?></td>
+                <td>
+                  <a href="declare_level.php?token=<?= h($u['level_token']) ?>&category=below_ae">Below AE</a>
+                  ·
+                  <a href="declare_level.php?token=<?= h($u['level_token']) ?>&category=ae_above">AE &amp; Above</a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+
 <?php else: ?>
 
     <h1>Dashboard</h1>
