@@ -28,6 +28,15 @@ $stmt = $pdo->prepare(
 $stmt->execute([':start' => $monthStart, ':end' => $monthEnd]);
 $rows = $stmt->fetchAll();
 
+// Get staff list for monthly report
+$staffStmt = $pdo->query(
+    'SELECT id, name, staff_no
+     FROM users
+     WHERE role = "staff"
+     ORDER BY name ASC'
+);
+$staffList = $staffStmt->fetchAll();
+
 $byDay = [];
 foreach ($rows as $r) {
     $d = (int)date('j', strtotime($r['ot_date']));
@@ -46,12 +55,50 @@ include __DIR__ . '/includes/header.php';
 <div class="dash-header">
   <div>
     <h1>OT Calendar</h1>
-    <p class="subtitle">Approved overtime across the company — <?= h(date('F Y', $firstOfMonth)) ?>.</p>
+    <p class="subtitle">
+      Approved overtime across the company — <?= h(date('F Y', $firstOfMonth)) ?>.
+    </p>
   </div>
-  <div style="display:flex; gap:0.5rem;">
-    <a href="calendar.php?y=<?= $prevYear ?>&m=<?= $prevMonth ?>" class="btn-secondary">‹ Prev</a>
-    <a href="calendar.php" class="btn-secondary">Today</a>
-    <a href="calendar.php?y=<?= $nextYear ?>&m=<?= $nextMonth ?>" class="btn-secondary">Next ›</a>
+
+  <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+
+    <a href="calendar.php?y=<?= $prevYear ?>&m=<?= $prevMonth ?>" class="btn-secondary">
+      ‹ Prev
+    </a>
+
+    <a href="calendar.php" class="btn-secondary">
+      Today
+    </a>
+
+    <a href="calendar.php?y=<?= $nextYear ?>&m=<?= $nextMonth ?>" class="btn-secondary">
+      Next ›
+    </a>
+
+    <!-- Monthly Report -->
+    <form method="get"
+          action="monthly_report.php"
+          target="_blank"
+          style="display:flex; gap:0.5rem; align-items:center;">
+
+      <input type="hidden" name="y" value="<?= $year ?>">
+      <input type="hidden" name="m" value="<?= $month ?>">
+
+      <select name="staff_id" required class="form-control">
+        <option value="">Select Staff</option>
+
+        <?php foreach ($staffList as $staff): ?>
+          <option value="<?= (int)$staff['id'] ?>">
+            <?= h($staff['name']) ?> (<?= h($staff['staff_no']) ?>)
+          </option>
+        <?php endforeach; ?>
+      </select>
+
+      <button type="submit" class="btn-primary">
+        Generate Monthly Report
+      </button>
+
+    </form>
+
   </div>
 </div>
 

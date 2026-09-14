@@ -407,73 +407,176 @@ include __DIR__ . '/includes/header.php';
 
 <?php else: ?>
 
-  <ul class="history-list">
-    <?php foreach ($history as $entry): ?>
-      <li>
-        <strong><?= h($entry['approver_name']) ?></strong>
-        (stage <?= (int)$entry['stage'] ?>) —
-
-        <span class="decision-<?= h($entry['decision']) ?>">
-          <?= h(ucfirst($entry['decision'])) ?>
-        </span>
-
-        on
-        <?= h(date('d M Y H:i', strtotime($entry['acted_at']))) ?>
-
-        <?php if (!empty($entry['comment'])): ?>
-          <br>
-          <em><?= h($entry['comment']) ?></em>
-        <?php endif; ?>
-      </li>
-    <?php endforeach; ?>
-  </ul>
+  
 
 <?php endif; ?>
 
 <div class="print-only">
+
+  <!-- PRINT HEADER -->
   <div class="print-header">
     <img src="assets/JCY_logo.png" alt="JCY HDD">
+
     <div>
       <h2>Overtime Request Form</h2>
-      <div class="print-meta">Request #<?= (int)$request['id'] ?> · Printed <?= h(date('d M Y H:i')) ?></div>
+
+      <div class="print-meta">
+        Request #<?= (int)$request['id'] ?>
+        · Printed <?= h(date('d M Y H:i')) ?>
+      </div>
     </div>
   </div>
 
-  <table class="print-table">
-    <tr><td>Staff Name</td><td><?= h($request['staff_name']) ?></td></tr>
-    <tr><td>Staff No.</td><td><?= h($request['staff_no'] ?? '') ?></td></tr>
-    <tr><td>OT Date</td><td><?= h(date('d M Y', strtotime($request['ot_date']))) ?></td></tr>
-    <tr><td>Time</td><td><?= h(substr($request['start_time'], 0, 5)) ?> – <?= h(substr($request['end_time'], 0, 5)) ?></td></tr>
-    <tr><td>Total Hours</td><td><?= h($request['total_hours']) ?></td></tr>
-    <tr><td>Reason</td><td><?= nl2br(h($request['reason'])) ?></td></tr>
-    <tr><td>Status</td><td><?= h(status_label($request['status'])) ?></td></tr>
+
+  <!-- MEMO INFORMATION -->
+  <table class="memo-fields">
+
+    <tr>
+      <td class="memo-field-label">To</td>
+      <td>:</td>
+      <td>Human Resource Department / Payroll Department</td>
+    </tr>
+
+    <tr>
+      <td class="memo-field-label">Attn</td>
+      <td>:</td>
+      <td>Ms. Ena / Ms. Lai</td>
+    </tr>
+
+    <tr>
+      <td class="memo-field-label">From</td>
+      <td>:</td>
+      <td><?= h($request['staff_name']) ?></td>
+    </tr>
+
+    <tr>
+      <td class="memo-field-label">Staff No</td>
+      <td>:</td>
+      <td><?= h($request['staff_no'] ?? '') ?></td>
+    </tr>
+
+    <tr>
+      <td class="memo-field-label">Cc</td>
+      <td>:</td>
+      <td>Mr. Nordin / Mr. Jeffrey Yeoh</td>
+    </tr>
+
+    <tr>
+      <td class="memo-field-label">Date</td>
+      <td>:</td>
+      <td><?= h($request['ot_date']) ?></td>
+    </tr>
+
+    <tr>
+      <td class="memo-field-label">Subject</td>
+      <td>:</td>
+      <td>
+        CLAIM OVER TIME
+        (<?= h(date('h:i A', strtotime($request['start_time']))) ?>
+        to
+        <?= h(date('h:i A', strtotime($request['end_time']))) ?>)
+      </td>
+    </tr>
+
   </table>
 
-  <?php if ($history): ?>
-    <table class="print-table">
-      <?php foreach ($history as $entry): ?>
-        <tr>
-          <td><?= h($entry['approver_name']) ?> (Stage <?= (int)$entry['stage'] ?>)</td>
-          <td>
-            <?= h(ucfirst($entry['decision'])) ?> on <?= h(date('d M Y H:i', strtotime($entry['acted_at']))) ?>
-            <?php if (!empty($entry['comment'])): ?> — <?= h($entry['comment']) ?><?php endif; ?>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-    </table>
-  <?php endif; ?>
 
-  <div class="print-signatures">
-    <div class="print-sign-block">
-      <div class="print-sign-line">Staff Signature / Date</div>
+  <?php
+    /* Get Stage 1 approver name */
+    $stage1Name = '';
+
+    foreach ($history as $entry) {
+        if ((int)$entry['stage'] === 1) {
+            $stage1Name = $entry['approver_name'];
+            break;
+        }
+    }
+  ?>
+
+
+  <!-- OT SUMMARY TABLE -->
+  <table class="ot-summary-table">
+
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Emp No</th>
+        <th>Date</th>
+        <th>Works Day</th>
+        <th>Remarks</th>
+        <th>OT Hour</th>
+        <th>Approval By</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+
+        <td>
+          <?= h($request['staff_name']) ?>
+        </td>
+
+        <td>
+          <?= h($request['staff_no'] ?? '') ?>
+        </td>
+
+        <td>
+          <?= h(date('d/M/y', strtotime($request['ot_date']))) ?>
+        </td>
+
+        <td>
+          <?= h(date('l', strtotime($request['ot_date']))) ?>
+        </td>
+
+        <td>
+          <?= nl2br(h($request['reason'])) ?>
+        </td>
+
+        <td>
+          <?= h($request['total_hours']) ?>
+        </td>
+
+        <td>
+          <?= $stage1Name !== ''
+              ? h($stage1Name)
+              : '—' ?>
+        </td>
+
+      </tr>
+    </tbody>
+
+  </table>
+
+
+  <!-- CLOSING -->
+  <p class="print-closing">
+    Thank you.<br>
+    Regards,
+  </p>
+
+
+  <!-- SIGNATURE -->
+  <div class="print-final-signature">
+
+    <div>
+      Requested By:
     </div>
-    <div class="print-sign-block">
-      <div class="print-sign-line">En Salim / Date</div>
+
+    <div style="margin-top: 40px;">
+      .......................
     </div>
-    <div class="print-sign-block">
-      <div class="print-sign-line">CK Teh / Date</div>
+
+    <div class="print-sign-name">
+      Mr. CK Teh
     </div>
+
+    <div>
+      General Manager
+    </div>
+
   </div>
+
 </div>
+
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
