@@ -195,7 +195,7 @@ function notify_cancellation(int $request_id): void
 
 /**
  * Notify HR that a new staff member has registered, so they can declare
- * that person's level (operator / leader / engineer) with one click from
+ * that person's category (Below Assistant Engineer / Assistant Engineer and Above) with one click from
  * the email — no login required. Called by register.php right after the
  * new account (and its level_token) is created.
  */
@@ -218,17 +218,17 @@ function notify_hr_new_staff(int $user_id): void
 
     $base = base_url();
     $links = [];
-    foreach (['operator' => 'Operator', 'leader' => 'Leader', 'engineer' => 'Engineer'] as $value => $label) {
-        $links[] = $label . ': ' . $base . '/declare_level.php?token=' . urlencode($user['level_token']) . '&level=' . $value;
+    foreach (['below_ae' => 'Below Assistant Engineer', 'ae_above' => 'Assistant Engineer and Above'] as $value => $label) {
+        $links[] = $label . ': ' . $base . '/declare_level.php?token=' . urlencode($user['level_token']) . '&category=' . $value;
     }
 
-    $subject = "New staff registered — please set level for {$user['name']} ({$user['staff_no']})";
+    $subject = "New staff registered — please set category for {$user['name']} ({$user['staff_no']})";
     $body = "A new staff account has been registered on the OT system:\n\n"
           . "Name: {$user['name']}\n"
           . "Staff No: {$user['staff_no']}\n"
           . "Department: " . ($user['department'] ?: '(not provided)') . "\n"
           . "Email: {$user['email']}\n\n"
-          . "Please click the link below that matches this staff member's level. "
+          . "Please click the link below that matches this staff member's category. "
           . "Each link is one-time use — clicking one will ask you to confirm before it's applied.\n\n"
           . implode("\n", $links)
           . "\n\nIf you didn't expect this email, no action is needed.";
