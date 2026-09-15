@@ -236,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Success
                     // ------------------------------------------------
                     flash_set(
-                        'Account created. Please wait for HR to confirm your category before logging in.',
+                        'Account created. Please wait for HR to confirm your account before logging in.',
                         'success'
                     );
 
@@ -326,7 +326,36 @@ include __DIR__ . '/includes/header.php';
         >
 
         <!-- Email -->
-        <label for="email">Email</label>
+        <div class="form-label-with-info">
+            <label for="email">Email</label>
+
+            <button
+                type="button"
+                class="privacy-info-button"
+                aria-label="Privacy information"
+                aria-describedby="privacy-tooltip"
+            >
+                <span aria-hidden="true">⚠</span>
+            </button>
+
+            <div
+                id="privacy-tooltip"
+                class="privacy-tooltip"
+                role="tooltip"
+            >
+                <strong>Privacy &amp; personal email</strong>
+
+                <p>
+                    Your personal email is optional. If provided, it may be used only
+                    for system account notifications and password recovery.
+                </p>
+
+                <p>
+                    HR may verify the email before it is activated for these purposes.
+                    Your personal email will not be displayed to other staff members.
+                </p>
+            </div>
+        </div>
 
         <input
             type="email"
@@ -352,8 +381,7 @@ include __DIR__ . '/includes/header.php';
                 <strong>I don't have a company email</strong>
 
                 <small>
-                    If you have a personal email, enter it above.
-                    Leave it blank if you have no email at all.
+                    Personal email is optional. Leave the email field blank if you do not want to provide one.
                 </small>
 
             </span>
@@ -361,8 +389,10 @@ include __DIR__ . '/includes/header.php';
         </label>
 
         <div class="form-help" id="email-help">
-            Company email is the default.
-            Personal email is allowed only as an HR-reviewed exception.
+            Company email is required by default.
+
+            If you do not have one, a personal email is optional
+            and will require HR verification before it is used.
         </div>
 
         <!-- Password -->
@@ -481,20 +511,49 @@ include __DIR__ . '/includes/header.php';
             email.placeholder = 'Personal email (optional)';
 
             help.textContent =
-                'HR will review and confirm any personal email before your account is approved.';
+                'Personal email is optional. HR will verify it before it is used for account-related purposes.';
 
         } else {
 
             email.placeholder = 'name@jcyinternational.com';
 
             help.textContent =
-                'Company email is required unless you declare that you do not have one.';
+                'Company email is required unless you select "I don\'t have a company email".';
         }
     }
 
     checkbox.addEventListener('change', updateEmailState);
 
     updateEmailState();
+
+        /*
+    |--------------------------------------------------------------------------
+    | Privacy tooltip
+    |--------------------------------------------------------------------------
+    */
+
+    var privacyButton = document.querySelector('.privacy-info-button');
+    var privacyTooltip = document.getElementById('privacy-tooltip');
+
+    if (privacyButton && privacyTooltip) {
+
+        privacyButton.addEventListener('click', function (event) {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            privacyTooltip.classList.toggle('is-visible');
+        });
+
+        document.addEventListener('click', function (event) {
+
+            if (
+                !event.target.closest('.form-label-with-info')
+            ) {
+                privacyTooltip.classList.remove('is-visible');
+            }
+        });
+    }
 
 
     // ------------------------------------------------------------

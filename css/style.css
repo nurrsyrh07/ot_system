@@ -1342,3 +1342,128 @@ input[type="email"]:focus {
   margin-top: 1rem;
   margin-bottom: 1rem;
 }
+
+/* ============================================================
+   Email label + privacy tooltip
+   ============================================================ */
+
+.form-label-with-info {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 7px;
+}
+
+.form-label-with-info label {
+    margin: 0;
+}
+
+.privacy-info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 19px;
+    height: 19px;
+
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #9a6b00;
+
+    font-size: 13px;
+    line-height: 1;
+
+    cursor: help;
+}
+
+.privacy-info-button:hover,
+.privacy-info-button:focus-visible {
+    color: #c58a00;
+    outline: none;
+}
+
+.privacy-tooltip {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 8px);
+
+    z-index: 1000;
+
+    width: 290px;
+    padding: 12px 14px;
+
+    border: 1px solid #e6e8ec;
+    border-radius: 10px;
+
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+
+    color: #5f6672;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease,
+        visibility 0.15s ease;
+
+    pointer-events: none;
+}
+
+.privacy-tooltip::before {
+    content: "";
+
+    position: absolute;
+    top: -6px;
+    left: 9px;
+
+    width: 10px;
+    height: 10px;
+
+    background: #ffffff;
+
+    border-left: 1px solid #e6e8ec;
+    border-top: 1px solid #e6e8ec;
+
+    transform: rotate(45deg);
+}
+
+.privacy-tooltip strong {
+    display: block;
+    margin-bottom: 5px;
+
+    color: #374151;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.privacy-tooltip p {
+    margin: 0;
+
+    color: #6b7280;
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+/* Desktop hover */
+.form-label-with-info:hover .privacy-tooltip,
+.form-label-with-info:focus-within .privacy-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Mobile / touch */
+.privacy-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
