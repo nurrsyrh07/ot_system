@@ -260,13 +260,6 @@ if (
                 */
                 $successPassword = $temporaryPassword;
 
-                /*
-                |--------------------------------------------------------------------------
-                | Keep selected staff visible
-                |--------------------------------------------------------------------------
-                */
-                $selectedStaff = $selectedStaff;
-
             } catch (Throwable $e) {
 
                 if ($pdo->inTransaction()) {

@@ -82,10 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                      FOR UPDATE'
                 );
 
-                $stmt->execute([
-                    ':token_hash' => $token_hash
-                ]);
-
                 $reset = $stmt->fetch();
 
                 if (!$reset) {
