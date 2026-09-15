@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/mail.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
@@ -50,7 +51,7 @@ $monthName = date('F Y', $firstOfMonth);
 // --------------------------------------------------
 
 $staffStmt = $pdo->prepare(
-    'SELECT id, name, staff_no
+    'SELECT id, name, staff_no, department
      FROM users
      WHERE id = :id
        AND role = "staff"
@@ -66,6 +67,9 @@ $staff = $staffStmt->fetch();
 if (!$staff) {
     die('Staff member not found.');
 }
+
+$stage2Approver = find_approver_by_stage($pdo, 2, $staff['department']);
+$stage2ApproverName = $stage2Approver ? $stage2Approver['name'] : 'Approver not configured';
 
 // --------------------------------------------------
 // Get approved OT for selected month
@@ -287,7 +291,7 @@ include __DIR__ . '/includes/header.php';
       </div>
 
       <div class="print-sign-name">
-        Mr. CK Teh
+        <?= h($stage2ApproverName) ?>
       </div>
 
       <div>

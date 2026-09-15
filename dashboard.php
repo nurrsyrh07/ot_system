@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/mail.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
@@ -24,10 +25,11 @@ include __DIR__ . '/includes/header.php';
 
     <?php
     $stmt = $pdo->prepare(
-        'SELECT *
-         FROM ot_requests
-         WHERE staff_id = :staff_id
-         ORDER BY created_at DESC'
+        'SELECT r.*, u.department AS staff_department
+         FROM ot_requests r
+         JOIN users u ON u.id = r.staff_id
+         WHERE r.staff_id = :staff_id
+         ORDER BY r.created_at DESC'
     );
 
     $stmt->execute([
@@ -128,7 +130,7 @@ include __DIR__ . '/includes/header.php';
                 <td><?= h($request['total_hours']) ?></td>
                 <td>
                   <span class="badge badge-<?= h($request['status']) ?>">
-                    <?= h(status_label($request['status'])) ?>
+                    <?= h(request_status_label($pdo, $request)) ?>
                   </span>
                 </td>
                 <td>
@@ -181,7 +183,8 @@ include __DIR__ . '/includes/header.php';
             'SELECT
                 r.*,
                 u.name AS staff_name,
-                u.staff_no
+                u.staff_no,
+                u.department AS staff_department
              FROM ot_requests r
              JOIN users u ON u.id = r.staff_id
              WHERE r.status = :status
@@ -193,6 +196,17 @@ include __DIR__ . '/includes/header.php';
         ]);
 
         $pending = $stmt->fetchAll();
+
+        // Stage 2 can be department-specific — only show requests actually
+        // assigned to this logged-in approver (their own department, or the
+        // department-less default when no specific approver is configured).
+        if ($stage === 2) {
+            $myId = current_user_id();
+            $pending = array_values(array_filter($pending, function ($r) use ($pdo, $myId) {
+                $assigned = find_approver_by_stage($pdo, 2, $r['staff_department']);
+                return $assigned && (int)$assigned['id'] === $myId;
+            }));
+        }
     }
     ?>
 
@@ -209,7 +223,7 @@ include __DIR__ . '/includes/header.php';
       <div class="dash-header">
         <div>
           <h1>Requests awaiting your approval</h1>
-          <p class="subtitle"><?= h(approval_stage_label($stage)) ?></p>
+          <p class="subtitle"><?= h(approval_stage_label($stage)) ?> (<?= h($_SESSION['name'] ?? '') ?>)</p>
         </div>
       </div>
 

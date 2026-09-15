@@ -53,12 +53,17 @@ function flash_get(): ?array
     return $flash;
 }
 
-/** Human-readable label for ot_requests.status. */
+/**
+ * Human-readable label for ot_requests.status, WITHOUT naming an approver —
+ * stage-2 approver differs per department now, so this can't hardcode a
+ * name. Use request_status_label() in config/mail.php when you have the
+ * request row (with staff_department) and want the actual approver named.
+ */
 function status_label(string $status): string
 {
     $map = [
-        'pending_stage1' => 'Pending — En Salim',
-        'pending_stage2' => 'Pending — CK Teh',
+        'pending_stage1' => 'Pending — Department Manager',
+        'pending_stage2' => 'Pending — General Manager',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
         'cancelled' => 'Cancelled',
@@ -67,12 +72,12 @@ function status_label(string $status): string
     return $map[$status] ?? $status;
 }
 
-/** Return the label for an approval stage. */
+/** Generic label for an approval stage — no approver name (that varies by department for stage 2). */
 function approval_stage_label(?int $stage): string
 {
     return match ($stage) {
-        1 => 'Stage 1 — En Salim',
-        2 => 'Stage 2 — CK Teh',
+        1 => 'Department Manager',
+        2 => 'General Manager',
         default => 'Staff',
     };
 }

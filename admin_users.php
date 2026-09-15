@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (!in_array($role, ['staff', 'approver', 'admin'], true)) {
                 $error = 'Please choose a valid role.';
             } elseif ($role === 'approver' && !in_array($stage, ['1', '2'], true)) {
-                $error = 'Please choose Stage 1 (En Salim) or Stage 2 (CK Teh) for an approver account.';
+                $error = 'Please choose Department Manager or General Manager for an approver account.';
             } elseif (strlen($password) < 6) {
                 $error = 'Password must be at least 6 characters.';
             } else {
@@ -204,8 +204,8 @@ include __DIR__ . '/includes/header.php';
       <label for="approval_stage">Approval stage</label>
       <select id="approval_stage" name="approval_stage">
         <option value="">Select a stage</option>
-        <option value="1">Stage 1</option>
-        <option value="2">Stage 2 </option>
+        <option value="1">Department Manager</option>
+        <option value="2">General Manager</option>
       </select>
     </div>
 

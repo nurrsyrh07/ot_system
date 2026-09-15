@@ -27,7 +27,7 @@ const MAIL_FROM_NAME     = 'JCY OT System';
 // TODO: replace with HR's real address (or a comma-separated list if more
 // than one person should get this). Nothing will actually reach HR until
 // this is set correctly.
-const HR_NOTIFY_EMAIL = 'nur.syahirah@jcyinternational.com';
+const HR_NOTIFY_EMAIL = 'nur.azrina@jcyinternational.com';
 
 /**
  * Send via PHP's mail(), pointed at the internal relay. Retries once with
@@ -82,7 +82,7 @@ function format_request_summary(array $request): string
 function get_request_with_staff(PDO $pdo, int $requestId): ?array
 {
     $stmt = $pdo->prepare(
-        "SELECT r.*, u.name AS staff_name, u.staff_no
+        "SELECT r.*, u.name AS staff_name, u.staff_no, u.department AS staff_department
          FROM ot_requests r
          JOIN users u ON u.id = r.staff_id
          WHERE r.id = ?"
@@ -92,12 +92,37 @@ function get_request_with_staff(PDO $pdo, int $requestId): ?array
     return $row ?: null;
 }
 
-/** Currently active approver assigned to a given stage (1 or 2), if any. */
-function find_approver_by_stage(PDO $pdo, int $stage): ?array
+/**
+ * Currently active approver assigned to a given stage (1 or 2), if any.
+ *
+ * Stage 1 (En Salim) is the same for every department. Stage 2 can differ
+ * per department — pass the staff member's department and this first
+ * looks for an approver specifically assigned to it (role='approver',
+ * approval_stage=2, department = that department). If none is configured
+ * for that department, it falls back to the stage-2 approver whose
+ * `department` is NULL, which acts as the default/catch-all (e.g. CK Teh,
+ * until other departments get their own dedicated approver).
+ */
+function find_approver_by_stage(PDO $pdo, int $stage, ?string $department = null): ?array
 {
+    if ($stage === 2 && $department !== null && $department !== '') {
+        $stmt = $pdo->prepare(
+            "SELECT * FROM users
+             WHERE role = 'approver' AND approval_stage = 2 AND is_active = 1 AND department = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$department]);
+        $row = $stmt->fetch();
+        if ($row) {
+            return $row;
+        }
+        // No approver dedicated to this department — fall through to the
+        // department-less default below.
+    }
+
     $stmt = $pdo->prepare(
         "SELECT * FROM users
-         WHERE role = 'approver' AND approval_stage = ? AND is_active = 1
+         WHERE role = 'approver' AND approval_stage = ? AND is_active = 1 AND department IS NULL
          LIMIT 1"
     );
     $stmt->execute([$stage]);
@@ -106,7 +131,35 @@ function find_approver_by_stage(PDO $pdo, int $stage): ?array
 }
 
 /**
- * Notify the stage-1 approver (En Salim) that a new request needs review.
+ * Like status_label() in functions.php, but names the actual approver —
+ * resolved per department for stage 2. Needs the request row to include
+ * staff_department (get_request_with_staff() and the other queries in
+ * this app that join staff department already provide it).
+ */
+function request_status_label(PDO $pdo, array $request): string
+{
+    $status = $request['status'];
+
+    if ($status === 'pending_stage1') {
+        $approver = find_approver_by_stage($pdo, 1);
+        return 'Pending — ' . ($approver ? $approver['name'] : 'Department Manager');
+    }
+
+    if ($status === 'pending_stage2') {
+        $approver = find_approver_by_stage($pdo, 2, $request['staff_department'] ?? null);
+        return 'Pending — ' . ($approver ? $approver['name'] : 'General Manager');
+    }
+
+    $map = [
+        'approved'  => 'Approved',
+        'rejected'  => 'Rejected',
+        'cancelled' => 'Cancelled',
+    ];
+    return $map[$status] ?? $status;
+}
+
+/**
+ * Notify the stage-1 approver once a staff member has submitted a request.
  * Called by submit_ot.php right after a staff member's request is inserted.
  */
 function notify_stage1_approver(int $request_id): void
@@ -148,7 +201,7 @@ function notify_stage2_approver(int $request_id): void
         return;
     }
 
-    $approver = find_approver_by_stage($pdo, 2);
+    $approver = find_approver_by_stage($pdo, 2, $request['staff_department']);
     if (!$approver) {
         error_log("OT system: notify_stage2_approver — no active stage-2 approver configured");
         return;
@@ -185,7 +238,7 @@ function notify_cancellation(int $request_id): void
           . "\n\nNo further action is needed on this request.";
 
     foreach ([1, 2] as $stage) {
-        $approver = find_approver_by_stage($pdo, $stage);
+        $approver = find_approver_by_stage($pdo, $stage, $request['staff_department']);
         if (!$approver) {
             error_log("OT system: notify_cancellation — no active stage-{$stage} approver configured");
             continue;

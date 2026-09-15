@@ -73,8 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         );
                     }
 
+                    $stage1Approver = find_approver_by_stage($pdo, 1);
                     flash_set(
-                        'OT request submitted. It has been sent to En Salim for approval.',
+                        'OT request submitted. It has been sent to '
+                        . ($stage1Approver ? $stage1Approver['name'] : 'the Department Manager')
+                        . ' for approval.',
                         'success'
                     );
 

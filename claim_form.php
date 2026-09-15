@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/mail.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
@@ -71,6 +72,9 @@ foreach ($requests as $request) {
 
 $category = $staff['category'];
 $categoryRequests = $weekdayRequests;
+
+$stage2Approver = find_approver_by_stage($pdo, 2, $staff['department']);
+$stage2ApproverName = $stage2Approver ? $stage2Approver['name'] : '';
 
 $page_title = 'Monthly OT Forms';
 include __DIR__ . '/includes/header.php';
@@ -243,7 +247,7 @@ include __DIR__ . '/includes/header.php';
               <td><?= h(weekday_name($r['ot_date'])) ?></td>
               <td><?= nl2br(h($r['reason'])) ?></td>
               <td><?= h(number_format((float)$r['total_hours'],2)) ?></td>
-              <td></td>
+              <td><?= h($stage2ApproverName) ?></td>
             </tr>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -255,7 +259,7 @@ include __DIR__ . '/includes/header.php';
       <div class="requested-by">
         <strong>Requested by:</strong>
         <div class="signature-line"></div>
-        <strong>Mr. CK Teh</strong><br>
+        <strong><?= h($stage2ApproverName) ?></strong><br>
         General Manager
       </div>
     <?php endif; ?>
@@ -306,7 +310,7 @@ include __DIR__ . '/includes/header.php';
           <td>Sunday</td>
           <td><?= nl2br(h($r['reason'])) ?></td>
           <td><?= h(number_format((float)$r['total_hours'],2)) ?></td>
-          <td></td>
+          <td><?= h($stage2ApproverName) ?></td>
         </tr>
       <?php endforeach; ?>
       </tbody>
@@ -317,7 +321,7 @@ include __DIR__ . '/includes/header.php';
     <div class="requested-by">
       <strong>Requested by:</strong>
       <div class="signature-line"></div>
-      <strong>Mr. CK Teh</strong><br>
+      <strong><?= h($stage2ApproverName) ?></strong><br>
       General Manager
     </div>
   </div>

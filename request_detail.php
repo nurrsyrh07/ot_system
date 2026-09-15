@@ -22,7 +22,8 @@ $stmt = $pdo->prepare(
         r.*,
         u.name AS staff_name,
         u.staff_no,
-        u.email AS staff_email
+        u.email AS staff_email,
+        u.department AS staff_department
      FROM ot_requests r
      JOIN users u
        ON u.id = r.staff_id
@@ -86,7 +87,11 @@ if ($isApprover) {
         $approverStage === 2
         && $request['status'] === 'pending_stage2'
     ) {
-        $isMyTurn = true;
+        // Stage 2 can be department-specific — only the approver actually
+        // assigned to this staff member's department (or the department-
+        // less default, if none is assigned) may act on it.
+        $assignedApprover = find_approver_by_stage($pdo, 2, $request['staff_department']);
+        $isMyTurn = $assignedApprover && (int)$assignedApprover['id'] === $userId;
     }
 }
 
@@ -205,7 +210,7 @@ if (
                 if ($action === 'approve') {
                     $notice = (
                         $approverStage === 1
-                            ? 'Request approved and sent to Stage 2.'
+                            ? 'Request approved and sent to General Manager.'
                             : 'Request approved successfully.'
                     );
                 } else {
@@ -333,7 +338,7 @@ include __DIR__ . '/includes/header.php';
   <dt>Status</dt>
   <dd>
     <span class="badge badge-<?= h($request['status']) ?>">
-      <?= h(status_label($request['status'])) ?>
+      <?= h(request_status_label($pdo, $request)) ?>
     </span>
   </dd>
 </dl>
@@ -343,7 +348,7 @@ include __DIR__ . '/includes/header.php';
   <div class="form-panel approval-panel">
     <h2>Your approval</h2>
     <p class="subtitle">
-      You are acting as <?= h(approval_stage_label($approverStage)) ?>.
+      You are acting as <?= h(approval_stage_label($approverStage)) ?> (<?= h($_SESSION['name'] ?? '') ?>).
     </p>
 
     <form method="post" novalidate>
@@ -386,9 +391,9 @@ include __DIR__ . '/includes/header.php';
     <?php if (in_array($request['status'], ['approved', 'rejected'], true)): ?>
       This request has been closed.
     <?php elseif ($request['status'] === 'pending_stage1'): ?>
-      This request is currently waiting for Stage 1 approval.
+      This request is currently waiting for Department Manager approval.
     <?php elseif ($request['status'] === 'pending_stage2'): ?>
-      This request is currently waiting for Stage 2 approval.
+      This request is currently waiting for General Manager approval.
     <?php else: ?>
       This request is view-only for you.
     <?php endif; ?>
