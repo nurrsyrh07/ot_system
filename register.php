@@ -346,13 +346,13 @@ include __DIR__ . '/includes/header.php';
                 <strong>Privacy &amp; personal email</strong>
 
                 <p>
-                    Your personal email is optional. If provided, it may be used only
-                    for system account notifications and password recovery.
+                    Your personal email is optional. If provided, it will strictly be
+                    used for system account notifications and password recovery.
                 </p>
 
                 <p>
-                    HR may verify the email before it is activated for these purposes.
-                    Your personal email will not be displayed to other staff members.
+                    HR will verify the email before it is activated. Your personal email 
+                    remains confidential and will not be displayed to other staff members.
                 </p>
             </div>
         </div>
